@@ -1,0 +1,36 @@
+/* Farmer portal responsive layout */
+
+@media (max-width: 991.98px) {
+  .farmer-sidebar {
+    width: 220px !important;
+    min-width: 220px !important;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .farmer-sidebar {
+    width: 70px !important;
+    min-width: 70px !important;
+  }
+
+  .farmer-sidebar .sidebar-brand-text,
+  .farmer-sidebar .sidebar-menu-label,
+  .farmer-sidebar .sidebar-user-info,
+  .farmer-sidebar .sidebar-logout-text {
+    display: none;
+  }
+
+  .farmer-sidebar .sidebar-brand {
+    justify-content: center;
+  }
+
+  .farmer-sidebar .sidebar-link {
+    justify-content: center;
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+  }
+
+  .farmer-sidebar .sidebar-logout {
+    justify-content: center;
+  }
+}

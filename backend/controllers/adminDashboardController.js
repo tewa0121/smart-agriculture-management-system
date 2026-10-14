@@ -1,8 +1,10 @@
-
 const pool = require("../config/database");
 
 const isValidDate = (value) => {
-  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+  if (
+    typeof value !== "string" ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(value)
+  ) {
     return false;
   }
 
@@ -18,6 +20,7 @@ const getDashboardStats = async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
 
+    // Validate date filters.
     if (startDate && !isValidDate(startDate)) {
       return res.status(400).json({
         success: false,
@@ -39,7 +42,7 @@ const getDashboardStats = async (req, res) => {
       });
     }
 
-    // Build a safe, parameterized date filter for activity analytics.
+    // Build a safe date filter for farm activities.
     const activityConditions = [];
     const activityParams = [];
 
@@ -49,7 +52,9 @@ const getDashboardStats = async (req, res) => {
     }
 
     if (endDate) {
-      activityConditions.push("activity_date <= ?");
+      activityConditions.push(
+        "activity_date < DATE_ADD(?, INTERVAL 1 DAY)"
+      );
       activityParams.push(endDate);
     }
 
@@ -63,6 +68,9 @@ const getDashboardStats = async (req, res) => {
       [farmRows],
       [cropRows],
       [fieldRows],
+      [farmAreaRows],
+      [farmAreaOverviewRows],
+      [cropRecordRows],
       [harvestRows],
       [expenseRows],
       [activityCountRows],
@@ -77,30 +85,107 @@ const getDashboardStats = async (req, res) => {
       [activityLaborRows],
       [filteredActivitySummaryRows],
     ] = await Promise.all([
-      pool.query("SELECT COUNT(*) AS total FROM users"),
+      // Total users.
+      pool.query(`
+        SELECT COUNT(*) AS total
+        FROM users
+      `),
 
+      // Total farmers.
       pool.query(
-        "SELECT COUNT(*) AS total FROM users WHERE role = ?",
+        `
+          SELECT COUNT(*) AS total
+          FROM users
+          WHERE role = ?
+        `,
         ["farmer"]
       ),
 
-      pool.query("SELECT COUNT(*) AS total FROM farms"),
-      pool.query("SELECT COUNT(*) AS total FROM crops"),
-      pool.query("SELECT COUNT(*) AS total FROM fields"),
-      pool.query("SELECT COUNT(*) AS total FROM harvests"),
-      pool.query("SELECT COUNT(*) AS total FROM expenses"),
-
-      // All-time activity count remains unchanged.
-      pool.query("SELECT COUNT(*) AS total FROM farm_activities"),
-
-      // All-time labor cost remains unchanged.
+      // Total farms.
       pool.query(`
-        SELECT COALESCE(SUM(labor_cost), 0) AS total
+        SELECT COUNT(*) AS total
+        FROM farms
+      `),
+
+      // Total crop records.
+      pool.query(`
+        SELECT COUNT(*) AS total
+        FROM crops
+      `),
+
+      // Total fields.
+      pool.query(`
+        SELECT COUNT(*) AS total
+        FROM fields
+      `),
+
+      // Total farm area: sum field areas, not farms.total_area.
+      pool.query(`
+        SELECT
+          COALESCE(SUM(area), 0) AS totalFarmArea
+        FROM fields
+      `),
+
+      // Total area grouped by farm.
+      pool.query(`
+        SELECT
+          fa.id AS farmId,
+          fa.name AS farmName,
+          COALESCE(SUM(f.area), 0) AS totalArea,
+          COALESCE(MAX(f.area_unit), 'hectare') AS areaUnit
+        FROM farms fa
+        LEFT JOIN fields f ON f.farm_id = fa.id
+        GROUP BY fa.id, fa.name
+        ORDER BY fa.id DESC
+      `),
+
+      // Crop records with field and farm information.
+      pool.query(`
+        SELECT
+          c.id,
+          c.name AS cropName,
+          c.field_id AS fieldId,
+          f.name AS fieldName,
+          f.area AS fieldArea,
+          f.area_unit AS areaUnit,
+          fa.id AS farmId,
+          fa.name AS farmName
+        FROM crops c
+        LEFT JOIN fields f ON c.field_id = f.id
+        LEFT JOIN farms fa ON f.farm_id = fa.id
+        ORDER BY c.id DESC
+      `),
+
+      // Total harvests.
+      pool.query(`
+        SELECT COUNT(*) AS total
+        FROM harvests
+      `),
+
+      // Total expense records.
+      pool.query(`
+        SELECT COUNT(*) AS total
+        FROM expenses
+      `),
+
+      // Total farm activity records.
+      pool.query(`
+        SELECT COUNT(*) AS total
         FROM farm_activities
       `),
 
+      // All-time labor costs.
       pool.query(`
-        SELECT role, COUNT(*) AS total
+        SELECT
+          COALESCE(SUM(labor_cost), 0) AS total
+        FROM farm_activities
+      `),
+
+      // User distribution.
+      pool.query(`
+        SELECT
+          role,
+          COUNT(*) AS total
         FROM users
         GROUP BY role
       `),
@@ -109,13 +194,13 @@ const getDashboardStats = async (req, res) => {
       pool.query(`
         SELECT
           DATE_FORMAT(expense_date, '%Y-%m') AS month,
-          SUM(amount) AS total
+          COALESCE(SUM(amount), 0) AS total
         FROM expenses
         WHERE expense_date >= DATE_FORMAT(
           DATE_SUB(CURDATE(), INTERVAL 5 MONTH),
           '%Y-%m-01'
         )
-        AND expense_date <= CURDATE()
+        AND expense_date < DATE_ADD(CURDATE(), INTERVAL 1 DAY)
         GROUP BY DATE_FORMAT(expense_date, '%Y-%m')
         ORDER BY month ASC
       `),
@@ -124,13 +209,13 @@ const getDashboardStats = async (req, res) => {
       pool.query(`
         SELECT
           DATE_FORMAT(harvest_date, '%Y-%m') AS month,
-          SUM(COALESCE(total_revenue, 0)) AS total
+          COALESCE(SUM(total_revenue), 0) AS total
         FROM harvests
         WHERE harvest_date >= DATE_FORMAT(
           DATE_SUB(CURDATE(), INTERVAL 5 MONTH),
           '%Y-%m-01'
         )
-        AND harvest_date <= CURDATE()
+        AND harvest_date < DATE_ADD(CURDATE(), INTERVAL 1 DAY)
         GROUP BY DATE_FORMAT(harvest_date, '%Y-%m')
         ORDER BY month ASC
       `),
@@ -140,13 +225,13 @@ const getDashboardStats = async (req, res) => {
         SELECT
           DATE_FORMAT(harvest_date, '%Y-%m') AS month,
           COALESCE(quantity_unit, 'Unknown') AS unit,
-          SUM(quantity) AS total
+          COALESCE(SUM(quantity), 0) AS total
         FROM harvests
         WHERE harvest_date >= DATE_FORMAT(
           DATE_SUB(CURDATE(), INTERVAL 5 MONTH),
           '%Y-%m-01'
         )
-        AND harvest_date <= CURDATE()
+        AND harvest_date < DATE_ADD(CURDATE(), INTERVAL 1 DAY)
         GROUP BY
           DATE_FORMAT(harvest_date, '%Y-%m'),
           COALESCE(quantity_unit, 'Unknown')
@@ -170,7 +255,7 @@ const getDashboardStats = async (req, res) => {
         LIMIT 10
       `),
 
-      // Latest ten farm activities remain unfiltered.
+      // Latest ten farm activities.
       pool.query(`
         SELECT
           fa.id,
@@ -180,14 +265,14 @@ const getDashboardStats = async (req, res) => {
           fa.activity_type,
           fa.activity_date,
           fa.description,
-          fa.labor_cost
+          COALESCE(fa.labor_cost, 0) AS labor_cost
         FROM farm_activities fa
         LEFT JOIN crops c ON fa.crop_id = c.id
         ORDER BY fa.activity_date DESC, fa.id DESC
         LIMIT 10
       `),
 
-      // Activity count by type for the selected date range.
+      // Activity counts by type for the selected date range.
       pool.query(
         `
           SELECT
@@ -207,7 +292,7 @@ const getDashboardStats = async (req, res) => {
         activityParams
       ),
 
-      // Labor costs by type for the selected date range.
+      // Labor costs grouped by activity type.
       pool.query(
         `
           SELECT
@@ -228,7 +313,7 @@ const getDashboardStats = async (req, res) => {
         activityParams
       ),
 
-      // Total activities and labor costs for the selected range.
+      // Activity and labor totals for the selected date range.
       pool.query(
         `
           SELECT
@@ -241,7 +326,7 @@ const getDashboardStats = async (req, res) => {
       ),
     ]);
 
-    // Labels for the last six months.
+    // Build the last six month labels.
     const monthlyLabels = [];
     const now = new Date();
 
@@ -264,7 +349,9 @@ const getDashboardStats = async (req, res) => {
       });
     }
 
+    // Map monthly expenses.
     const expenseMap = {};
+
     monthlyExpenseRows.forEach((row) => {
       expenseMap[row.month] = Number(row.total || 0);
     });
@@ -274,7 +361,9 @@ const getDashboardStats = async (req, res) => {
       total: expenseMap[item.key] || 0,
     }));
 
+    // Map monthly harvest revenue.
     const revenueMap = {};
+
     monthlyRevenueRows.forEach((row) => {
       revenueMap[row.month] = Number(row.total || 0);
     });
@@ -284,7 +373,9 @@ const getDashboardStats = async (req, res) => {
       total: revenueMap[item.key] || 0,
     }));
 
+    // Map monthly harvest quantity by unit.
     const quantityMap = {};
+
     monthlyQuantityRows.forEach((row) => {
       if (!quantityMap[row.month]) {
         quantityMap[row.month] = {};
@@ -307,11 +398,33 @@ const getDashboardStats = async (req, res) => {
       return record;
     });
 
+    // Normalize user distribution.
     const userDistribution = roleRows.map((row) => ({
       role: row.role,
       total: Number(row.total || 0),
     }));
 
+    // Normalize farm area by farm.
+    const farmAreaOverview = farmAreaOverviewRows.map((row) => ({
+      farmId: Number(row.farmId),
+      farmName: row.farmName,
+      totalArea: Number(row.totalArea || 0),
+      areaUnit: row.areaUnit || "hectare",
+    }));
+
+    // Normalize crop records.
+    const cropRecords = cropRecordRows.map((row) => ({
+      id: Number(row.id),
+      cropName: row.cropName || "Unnamed crop",
+      fieldId: row.fieldId == null ? null : Number(row.fieldId),
+      fieldName: row.fieldName || "Unassigned field",
+      fieldArea: row.fieldArea == null ? null : Number(row.fieldArea),
+      areaUnit: row.areaUnit || "hectare",
+      farmId: row.farmId == null ? null : Number(row.farmId),
+      farmName: row.farmName || "Unassigned farm",
+    }));
+
+    // Normalize recent harvest records.
     const recentHarvests = recentHarvestRows.map((row) => ({
       id: row.id,
       cropId: row.crop_id,
@@ -323,6 +436,7 @@ const getDashboardStats = async (req, res) => {
       quality: row.quality || "Not specified",
     }));
 
+    // Normalize recent activity records.
     const recentActivities = recentActivityRows.map((row) => ({
       id: row.id,
       cropName: row.crop_name || "Unknown crop",
@@ -333,47 +447,57 @@ const getDashboardStats = async (req, res) => {
       laborCost: Number(row.labor_cost || 0),
     }));
 
+    // Activity counts by type.
     const activityTypeOverview = activityTypeRows.map((row) => ({
       activityType: row.activityType,
       total: Number(row.total || 0),
     }));
 
+    // Labor costs by activity type.
     const activityLaborOverview = activityLaborRows.map((row) => ({
       activityType: row.activityType,
       totalActivities: Number(row.totalActivities || 0),
       totalLaborCost: Number(row.totalLaborCost || 0),
     }));
 
+    // Date-filtered activity summary.
+    const summaryRow = filteredActivitySummaryRows[0] || {};
+
     const filteredActivitySummary = {
-      totalActivities: Number(
-        filteredActivitySummaryRows[0].totalActivities || 0
-      ),
-      totalLaborCosts: Number(
-        filteredActivitySummaryRows[0].totalLaborCost || 0
-      ),
+      totalActivities: Number(summaryRow.totalActivities || 0),
+      totalLaborCosts: Number(summaryRow.totalLaborCost || 0),
     };
 
     return res.status(200).json({
       success: true,
       data: {
-        totalUsers: Number(userRows[0].total || 0),
-        totalFarmers: Number(farmerRows[0].total || 0),
-        totalFarms: Number(farmRows[0].total || 0),
-        totalCrops: Number(cropRows[0].total || 0),
-        totalFields: Number(fieldRows[0].total || 0),
-        totalHarvests: Number(harvestRows[0].total || 0),
-        totalExpenses: Number(expenseRows[0].total || 0),
-        totalActivities: Number(activityCountRows[0].total || 0),
-        totalLaborCosts: Number(laborCostRows[0].total || 0),
+        totalUsers: Number(userRows[0]?.total || 0),
+        totalFarmers: Number(farmerRows[0]?.total || 0),
+        totalFarms: Number(farmRows[0]?.total || 0),
+        totalCrops: Number(cropRows[0]?.total || 0),
+        totalFields: Number(fieldRows[0]?.total || 0),
+
+        // New farm area statistics.
+        totalFarmArea: Number(farmAreaRows[0]?.totalFarmArea || 0),
+        farmAreaOverview,
+
+        // New crop record list.
+        cropRecords,
+
+        totalHarvests: Number(harvestRows[0]?.total || 0),
+        totalExpenses: Number(expenseRows[0]?.total || 0),
+        totalActivities: Number(activityCountRows[0]?.total || 0),
+
+        totalLaborCosts: Number(laborCostRows[0]?.total || 0),
 
         cropHarvestOverview: [
           {
             name: "Crop Records",
-            total: Number(cropRows[0].total || 0),
+            total: Number(cropRows[0]?.total || 0),
           },
           {
             name: "Harvest Records",
-            total: Number(harvestRows[0].total || 0),
+            total: Number(harvestRows[0]?.total || 0),
           },
         ],
 
@@ -385,10 +509,10 @@ const getDashboardStats = async (req, res) => {
         recentHarvests,
         recentActivities,
 
-        // Date-filtered analytics.
         activityTypeOverview,
         activityLaborOverview,
         filteredActivitySummary,
+
         activityDateFilter: {
           startDate: startDate || null,
           endDate: endDate || null,

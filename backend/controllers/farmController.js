@@ -1,12 +1,9 @@
 const farmModel = require("../models/farmModel");
 
+// Get farms belonging to the logged-in farmer
 const getFarms = async (req, res) => {
   try {
-    console.log("GET FARMS - req.user:", req.user);
-
-    const farms = await farmModel.getFarmsByUserId(
-      req.user.id
-    );
+    const farms = await farmModel.getFarmsByUserId(req.user.id);
 
     return res.status(200).json({
       success: true,
@@ -22,11 +19,49 @@ const getFarms = async (req, res) => {
   }
 };
 
+// Get all farms across all farmers for admin monitoring
+const getAllFarms = async (req, res) => {
+  try {
+    const farms = await farmModel.getAllFarms();
+
+    // Calculate dashboard totals from the farm records.
+    const totalFarms = farms.length;
+
+    const totalCropRecords = farms.reduce(
+      (total, farm) => total + Number(farm.crop_count || 0),
+      0
+    );
+
+    const totalFarmArea = farms.reduce(
+      (total, farm) => total + Number(farm.total_area || 0),
+      0
+    );
+
+    return res.status(200).json({
+      success: true,
+      data: farms,
+      summary: {
+        totalFarms,
+        totalCropRecords,
+        totalFarmArea,
+      },
+    });
+  } catch (error) {
+    console.error("Get all farms error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to retrieve all farms",
+    });
+  }
+};
+
+// Get one farm belonging to the logged-in farmer
 const getFarm = async (req, res) => {
   try {
     const farmId = Number(req.params.id);
 
-    if (!Number.isInteger(farmId)) {
+    if (!Number.isInteger(farmId) || farmId <= 0) {
       return res.status(400).json({
         success: false,
         message: "Invalid farm ID",
@@ -59,6 +94,7 @@ const getFarm = async (req, res) => {
   }
 };
 
+// Create a farm for the logged-in farmer
 const createFarm = async (req, res) => {
   try {
     const {
@@ -98,11 +134,12 @@ const createFarm = async (req, res) => {
   }
 };
 
+// Update a farm belonging to the logged-in farmer
 const updateFarm = async (req, res) => {
   try {
     const farmId = Number(req.params.id);
 
-    if (!Number.isInteger(farmId)) {
+    if (!Number.isInteger(farmId) || farmId <= 0) {
       return res.status(400).json({
         success: false,
         message: "Invalid farm ID",
@@ -159,11 +196,12 @@ const updateFarm = async (req, res) => {
   }
 };
 
+// Delete a farm belonging to the logged-in farmer
 const deleteFarm = async (req, res) => {
   try {
     const farmId = Number(req.params.id);
 
-    if (!Number.isInteger(farmId)) {
+    if (!Number.isInteger(farmId) || farmId <= 0) {
       return res.status(400).json({
         success: false,
         message: "Invalid farm ID",
@@ -182,10 +220,7 @@ const deleteFarm = async (req, res) => {
       });
     }
 
-    await farmModel.deleteFarm(
-      farmId,
-      req.user.id
-    );
+    await farmModel.deleteFarm(farmId, req.user.id);
 
     return res.status(200).json({
       success: true,
@@ -203,6 +238,7 @@ const deleteFarm = async (req, res) => {
 
 module.exports = {
   getFarms,
+  getAllFarms,
   getFarm,
   createFarm,
   updateFarm,
