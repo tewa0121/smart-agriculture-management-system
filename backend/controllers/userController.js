@@ -1,10 +1,84 @@
-const bcrypt = require("bcryptjs");
 
-const userModel = require("../models/userModel");
+const bcrypt = require("bcryptjs");
+const User = require("../models/userModel");
+
+// ==================== VALIDATION HELPERS ====================
+
+const normalizeEmail = (email) =>
+  typeof email === "string" ? email.trim().toLowerCase() : "";
+
+const isValidEmail = (email) => {
+  if (typeof email !== "string") return false;
+
+  const normalizedEmail = normalizeEmail(email);
+
+  // Require a valid-looking address ending exactly in @gmail.com
+  const gmailRegex = /^[a-z0-9.!#$%&'*+/=?^_`{|}~-]+@gmail\.com$/i;
+
+  if (!gmailRegex.test(normalizedEmail)) return false;
+
+  const [localPart] = normalizedEmail.split("@");
+
+  if (
+    localPart.startsWith(".") ||
+    localPart.endsWith(".") ||
+    localPart.includes("..")
+  ) {
+    return false;
+  }
+
+  return true;
+};
+
+const isValidPhone = (phone) => {
+  if (typeof phone !== "string" && typeof phone !== "number") {
+    return false;
+  }
+
+  const phoneString = String(phone).trim();
+
+  if (!/^[0-9+\-() ]+$/.test(phoneString)) {
+    return false;
+  }
+
+  const digitsOnly = phoneString.replace(/\D/g, "");
+  return digitsOnly.length >= 10;
+};
+
+const isValidName = (name) =>
+  typeof name === "string" &&
+  name.trim().length >= 2 &&
+  name.trim().length <= 100;
+
+const isValidRole = (role) =>
+  ["admin", "farmer"].includes(role);
+
+const isValidOptionalText = (value, maxLength) =>
+  value == null ||
+  (typeof value === "string" && value.trim().length <= maxLength);
+
+const normalizeIsActive = (value) => {
+  if (value === true || value === 1 || value === "1") return 1;
+  if (value === false || value === 0 || value === "0") return 0;
+  return null;
+};
+
+const isValidPassword = (password) =>
+  typeof password === "string" &&
+  password.length >= 6 &&
+  password.length <= 72;
+
+const getCurrentUserId = (req) =>
+  req.user?.id ?? req.user?.userId ?? req.user?.user_id;
+
+const isDuplicateEmailError = (error) =>
+  error.code === "ER_DUP_ENTRY" || error.errno === 1062;
+
+// ==================== GET ALL USERS ====================
 
 const getUsers = async (req, res) => {
   try {
-    const users = await userModel.getAllUsers();
+    const users = await User.getAllUsers();
 
     return res.status(200).json({
       success: true,
@@ -15,28 +89,21 @@ const getUsers = async (req, res) => {
 
     return res.status(500).json({
       success: false,
-      message: "Failed to retrieve users",
+      message: "Failed to retrieve users.",
     });
   }
 };
 
+// ==================== GET USER BY ID ====================
+
 const getUser = async (req, res) => {
   try {
-    const userId = Number(req.params.id);
-
-    if (!Number.isInteger(userId) || userId <= 0) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid user ID",
-      });
-    }
-
-    const user = await userModel.getUserById(userId);
+    const user = await User.getUserById(req.params.id);
 
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: "User not found",
+        message: "User not found.",
       });
     }
 
@@ -49,10 +116,12 @@ const getUser = async (req, res) => {
 
     return res.status(500).json({
       success: false,
-      message: "Failed to retrieve user",
+      message: "Failed to retrieve user.",
     });
   }
 };
+
+// ==================== CREATE USER ====================
 
 const createUser = async (req, res) => {
   try {
@@ -61,92 +130,128 @@ const createUser = async (req, res) => {
       email,
       password,
       role = "farmer",
-      phone = null,
-      address = null,
+      phone,
+      address,
+      isActive = true,
     } = req.body;
 
-    if (!name || !email || !password) {
+    const normalizedEmail = normalizeEmail(email);
+
+    if (!isValidName(name)) {
       return res.status(400).json({
         success: false,
-        message:
-          "Name, email, and password are required",
+        message: "Name must be between 2 and 100 characters.",
       });
     }
 
-    if (password.length < 6) {
+    if (!isValidEmail(normalizedEmail)) {
       return res.status(400).json({
         success: false,
-        message:
-          "Password must be at least 6 characters",
+        message: "Email must be a valid Gmail address ending in @gmail.com.",
       });
     }
 
-    if (!["admin", "farmer"].includes(role)) {
+    if (!isValidPhone(phone)) {
       return res.status(400).json({
         success: false,
-        message: "Invalid user role",
+        message: "Phone number must contain at least 10 digits.",
       });
     }
 
-    const existingUser =
-      await userModel.findByEmail(email);
-
-    if (existingUser) {
-      return res.status(409).json({
+    if (!isValidPassword(password)) {
+      return res.status(400).json({
         success: false,
-        message: "Email is already registered",
+        message: "Password must be between 6 and 72 characters.",
       });
     }
 
-    const hashedPassword =
-      await bcrypt.hash(password, 10);
+    if (!isValidRole(role)) {
+      return res.status(400).json({
+        success: false,
+        message: "Role must be admin or farmer.",
+      });
+    }
 
-    const userId =
-      await userModel.createUser({
+    if (!isValidOptionalText(address, 255)) {
+      return res.status(400).json({
+        success: false,
+        message: "Address must not exceed 255 characters.",
+      });
+    }
+
+    const activeValue = normalizeIsActive(isActive);
+
+    if (activeValue === null) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid account status.",
+      });
+    }
+
+    // Hash password before storing it
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Match the fields supported by userModel.createUser()
+    const newUserId = await User.createUser({
+      name: name.trim(),
+      email: normalizedEmail,
+      password: hashedPassword,
+      role,
+      phone: String(phone).trim(),
+      address: address?.trim() || null,
+    });
+
+    // Apply account status if the new account should be inactive.
+    // The model's createUser() method does not accept isActive.
+    if (activeValue === 0) {
+      await User.updateUser({
+        id: newUserId,
         name: name.trim(),
-        email: email.trim().toLowerCase(),
-        password: hashedPassword,
+        email: normalizedEmail,
         role,
-        phone,
-        address,
+        phone: String(phone).trim(),
+        address: address?.trim() || null,
+        isActive: 0,
       });
+    }
 
-    const user =
-      await userModel.getUserById(userId);
+    const createdUser = await User.getUserById(newUserId);
 
     return res.status(201).json({
       success: true,
-      message: "User created successfully",
-      data: user,
+      message: "User created successfully.",
+      data: createdUser,
     });
   } catch (error) {
     console.error("Create user error:", error);
 
+    if (isDuplicateEmailError(error)) {
+      return res.status(409).json({
+        success: false,
+        message: "This email address is already registered.",
+      });
+    }
+
     return res.status(500).json({
       success: false,
-      message: "Failed to create user",
+      message: "Failed to create user.",
     });
   }
 };
 
+// ==================== UPDATE USER ====================
+
 const updateUser = async (req, res) => {
   try {
-    const userId = Number(req.params.id);
+    const userId = req.params.id;
+    const currentUserId = getCurrentUserId(req);
 
-    if (!Number.isInteger(userId) || userId <= 0) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid user ID",
-      });
-    }
-
-    const existingUser =
-      await userModel.getUserById(userId);
+    const existingUser = await User.getUserById(userId);
 
     if (!existingUser) {
       return res.status(404).json({
         success: false,
-        message: "User not found",
+        message: "User not found.",
       });
     }
 
@@ -154,232 +259,233 @@ const updateUser = async (req, res) => {
       name,
       email,
       role,
-      phone = null,
-      address = null,
-      isActive = true,
+      phone,
+      address,
+      isActive,
     } = req.body;
 
-    if (!name || !email || !role) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "Name, email, and role are required",
-      });
+    // Start with existing values so partial updates don't erase fields.
+    const updates = {
+      id: userId,
+      name: existingUser.name,
+      email: existingUser.email,
+      role: existingUser.role,
+      phone: existingUser.phone,
+      address: existingUser.address,
+      isActive: Number(existingUser.is_active) === 0 ? 0 : 1,
+    };
+
+    if (name !== undefined) {
+      if (!isValidName(name)) {
+        return res.status(400).json({
+          success: false,
+          message: "Name must be between 2 and 100 characters.",
+        });
+      }
+
+      updates.name = name.trim();
     }
 
-    if (!["admin", "farmer"].includes(role)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid user role",
-      });
+    if (email !== undefined) {
+      const normalizedEmail = normalizeEmail(email);
+
+      if (!isValidEmail(normalizedEmail)) {
+        return res.status(400).json({
+          success: false,
+          message: "Email must be a valid Gmail address ending in @gmail.com.",
+        });
+      }
+
+      updates.email = normalizedEmail;
     }
 
-    const userWithEmail =
-      await userModel.findByEmail(
-        email.trim().toLowerCase()
-      );
+    if (phone !== undefined) {
+      if (!isValidPhone(phone)) {
+        return res.status(400).json({
+          success: false,
+          message: "Phone number must contain at least 10 digits.",
+        });
+      }
 
-    if (
-      userWithEmail &&
-      userWithEmail.id !== userId
-    ) {
-      return res.status(409).json({
-        success: false,
-        message: "Email is already used by another user",
-      });
+      updates.phone = String(phone).trim();
     }
 
-    const normalizedIsActive =
-      isActive === false ||
-      isActive === 0 ||
-      isActive === "0"
-        ? 0
-        : 1;
+    if (role !== undefined) {
+      if (!isValidRole(role)) {
+        return res.status(400).json({
+          success: false,
+          message: "Role must be admin or farmer.",
+        });
+      }
 
-    // Prevent the currently logged-in admin
-    // from accidentally disabling their own account.
-    if (
-      userId === req.user.id &&
-      normalizedIsActive === 0
-    ) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "You cannot deactivate your own account",
-      });
+      if (
+        String(userId) === String(currentUserId) &&
+        role !== "admin"
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "You cannot change your own administrator role.",
+        });
+      }
+
+      updates.role = role;
     }
 
-    // Prevent the currently logged-in admin
-    // from removing their own admin role.
-    if (
-      userId === req.user.id &&
-      role !== "admin"
-    ) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "You cannot remove your own admin role",
-      });
+    if (address !== undefined) {
+      if (!isValidOptionalText(address, 255)) {
+        return res.status(400).json({
+          success: false,
+          message: "Address must not exceed 255 characters.",
+        });
+      }
+
+      updates.address = address?.trim() || null;
     }
 
-    const affectedRows =
-      await userModel.updateUser({
-        id: userId,
-        name: name.trim(),
-        email: email.trim().toLowerCase(),
-        role,
-        phone,
-        address,
-        isActive: normalizedIsActive,
-      });
+    if (isActive !== undefined) {
+      const activeValue = normalizeIsActive(isActive);
 
-    if (affectedRows === 0) {
-      return res.status(400).json({
-        success: false,
-        message: "No changes were made",
-      });
+      if (activeValue === null) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid account status.",
+        });
+      }
+
+      if (
+        String(userId) === String(currentUserId) &&
+        activeValue === 0
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "You cannot deactivate your own account.",
+        });
+      }
+
+      updates.isActive = activeValue;
     }
 
-    const updatedUser =
-      await userModel.getUserById(userId);
+    const affectedRows = await User.updateUser(updates);
+
+    // MySQL may report zero affected rows if the submitted values
+    // are identical to the existing values. That's not necessarily an error.
+    const updatedUser = await User.getUserById(userId);
+
+    if (!updatedUser) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found after update.",
+      });
+    }
 
     return res.status(200).json({
       success: true,
-      message: "User updated successfully",
+      message: affectedRows
+        ? "User updated successfully."
+        : "No user fields changed.",
       data: updatedUser,
     });
   } catch (error) {
     console.error("Update user error:", error);
 
+    if (isDuplicateEmailError(error)) {
+      return res.status(409).json({
+        success: false,
+        message: "This email address is already registered.",
+      });
+    }
+
     return res.status(500).json({
       success: false,
-      message: "Failed to update user",
+      message: "Failed to update user.",
     });
   }
 };
 
+// ==================== UPDATE USER PASSWORD ====================
+
 const updateUserPassword = async (req, res) => {
   try {
-    const userId = Number(req.params.id);
-
-    if (!Number.isInteger(userId) || userId <= 0) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid user ID",
-      });
-    }
-
-    const user =
-      await userModel.getUserById(userId);
-
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
-    }
-
+    const userId = req.params.id;
     const { password } = req.body;
 
-    if (!password) {
+    if (!isValidPassword(password)) {
       return res.status(400).json({
         success: false,
-        message: "Password is required",
+        message: "Password must be between 6 and 72 characters.",
       });
     }
 
-    if (password.length < 6) {
-      return res.status(400).json({
+    const existingUser = await User.getUserById(userId);
+
+    if (!existingUser) {
+      return res.status(404).json({
         success: false,
-        message:
-          "Password must be at least 6 characters",
+        message: "User not found.",
       });
     }
 
-    const hashedPassword =
-      await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-    await userModel.updateUserPassword({
+    await User.updateUserPassword({
       id: userId,
       password: hashedPassword,
     });
 
     return res.status(200).json({
       success: true,
-      message: "User password updated successfully",
+      message: "Password updated successfully.",
     });
   } catch (error) {
-    console.error(
-      "Update user password error:",
-      error
-    );
+    console.error("Update password error:", error);
 
     return res.status(500).json({
       success: false,
-      message:
-        "Failed to update user password",
+      message: "Failed to update password.",
     });
   }
 };
 
+// ==================== DELETE USER ====================
+
 const deleteUser = async (req, res) => {
   try {
-    const userId = Number(req.params.id);
+    const userId = req.params.id;
+    const currentUserId = getCurrentUserId(req);
 
-    if (!Number.isInteger(userId) || userId <= 0) {
+    if (String(userId) === String(currentUserId)) {
       return res.status(400).json({
         success: false,
-        message: "Invalid user ID",
+        message: "You cannot delete your own account.",
       });
     }
 
-    if (userId === req.user.id) {
-      return res.status(400).json({
-        success: false,
-        message: "You cannot delete your own account",
-      });
-    }
+    const existingUser = await User.getUserById(userId);
 
-    const user =
-      await userModel.getUserById(userId);
-
-    if (!user) {
+    if (!existingUser) {
       return res.status(404).json({
         success: false,
-        message: "User not found",
+        message: "User not found.",
       });
     }
 
-    try {
-      await userModel.deleteUser(userId);
-    } catch (error) {
-      if (
-        error.code === "ER_ROW_IS_REFERENCED_2" ||
-        error.code === "ER_ROW_IS_REFERENCED"
-      ) {
-        return res.status(409).json({
-          success: false,
-          message:
-            "This user cannot be deleted because related farm data exists. Deactivate the account instead.",
-        });
-      }
-
-      throw error;
-    }
+    await User.deleteUser(userId);
 
     return res.status(200).json({
       success: true,
-      message: "User deleted successfully",
+      message: "User deleted successfully.",
     });
   } catch (error) {
     console.error("Delete user error:", error);
 
     return res.status(500).json({
       success: false,
-      message: "Failed to delete user",
+      message: "Failed to delete user.",
     });
   }
 };
+
+// ==================== EXPORT CONTROLLER FUNCTIONS ====================
 
 module.exports = {
   getUsers,
@@ -389,3 +495,4 @@ module.exports = {
   updateUserPassword,
   deleteUser,
 };
+
