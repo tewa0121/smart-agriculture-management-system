@@ -15,6 +15,7 @@ import {
   FaBalanceScale,
   FaRedoAlt,
   FaExclamationTriangle,
+  FaMoneyBillWave,
 } from "react-icons/fa";
 
 import {
@@ -765,7 +766,7 @@ const AdminDashboard = () => {
         <div className="col-12">
           <ChartCard
             title="Monthly Harvest Revenue"
-            icon={<FaChartLine />}
+            icon={<FaMoneyBillWave />}
             subtitle="Recorded revenue from harvests over time."
           >
             {stats.monthlyHarvestRevenue.length ? (
@@ -792,6 +793,99 @@ const AdminDashboard = () => {
               <EmptyState>No monthly harvest revenue data available.</EmptyState>
             )}
           </ChartCard>
+        </div>
+      </div>
+
+      {/* Monthly Harvest Quantity by Unit */}
+      <div className="row g-4 mb-4">
+        <div className="col-12">
+          <ChartCard
+            title="Monthly Harvest Quantity by Unit"
+            icon={<FaSeedling />}
+            subtitle="Harvest quantities grouped by unit."
+          >
+            {stats.monthlyHarvestQuantity.length && stats.quantityUnits.length ? (
+              <div className="chart-wrap">
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={stats.monthlyHarvestQuantity} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+                    <YAxis tick={{ fontSize: 11 }} />
+                    <Tooltip />
+                    <Legend wrapperStyle={{ fontSize: '12px' }} />
+                    {stats.quantityUnits.map((unit, index) => (
+                      <Line
+                        key={unit}
+                        type="monotone"
+                        dataKey={unit}
+                        name={unit}
+                        stroke={COLORS[index % COLORS.length]}
+                        strokeWidth={2}
+                        connectNulls
+                      />
+                    ))}
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <EmptyState>No harvest quantities recorded for the last six months.</EmptyState>
+            )}
+          </ChartCard>
+        </div>
+      </div>
+
+      {/* Recent Harvests */}
+      <div className="row g-4 mb-4">
+        <div className="col-12">
+          <div className="card dashboard-panel border-0 shadow-sm">
+            <div className="card-body p-3 p-md-4">
+              <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                <h5 className="fw-bold mb-0 fs-6">Recent Harvests</h5>
+                <span className="text-muted small">Latest 10 harvest records</span>
+              </div>
+              {stats.recentHarvests.length ? (
+                <div className="table-responsive">
+                  <table className="table table-striped table-hover align-middle mb-0 small">
+                    <thead className="table-success">
+                      <tr>
+                        <th>Harvest ID</th>
+                        <th>Crop Name</th>
+                        <th>Harvest Date</th>
+                        <th>Quantity</th>
+                        <th>Total Revenue</th>
+                        <th>Quality</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {stats.recentHarvests.map((harvest, index) => (
+                        <tr key={harvest.id ?? `harvest-${index}`}>
+                          <td>#{safeText(harvest.id)}</td>
+                          <td className="fw-semibold">
+                            {safeText(harvest.cropName, "Unknown crop")}
+                          </td>
+                          <td>{formatDate(harvest.harvestDate)}</td>
+                          <td className="text-nowrap">
+                            {formatNumber(harvest.quantity)}{" "}
+                            {safeText(harvest.quantityUnit, "Unknown")}
+                          </td>
+                          <td className="text-nowrap">
+                            {formatMoney(harvest.totalRevenue)}
+                          </td>
+                          <td>
+                            <span className="badge bg-light text-dark border">
+                              {safeText(harvest.quality, "Not specified")}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <EmptyState>No harvest records are available yet.</EmptyState>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
