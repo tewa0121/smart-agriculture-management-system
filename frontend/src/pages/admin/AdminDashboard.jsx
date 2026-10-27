@@ -5,9 +5,7 @@ import {
   FaUserTie,
   FaTractor,
   FaSeedling,
-  FaLayerGroup,
-  FaBoxOpen,
-  FaMoneyBillWave,
+  FaClipboardList,
   FaChartLine,
   FaLeaf,
   FaTasks,
@@ -51,6 +49,7 @@ const EMPTY_STATS = {
   totalFarmers: 0,
   totalFarms: 0,
   totalCrops: 0,
+  totalApplications: 0,
   totalFields: 0,
   totalHarvests: 0,
   totalExpenses: 0,
@@ -80,8 +79,7 @@ const formatMoney = (value) =>
     maximumFractionDigits: 2,
   });
 
-const formatNumber = (value) =>
-  Number(value || 0).toLocaleString();
+const formatNumber = (value) => Number(value || 0).toLocaleString();
 
 const formatDate = (value) => {
   if (!value) return "—";
@@ -96,9 +94,7 @@ const formatDate = (value) => {
 };
 
 const safeText = (value, fallback = "—") =>
-  value === null || value === undefined || value === ""
-    ? fallback
-    : String(value);
+  value === null || value === undefined || value === "" ? fallback : String(value);
 
 const normalizeStats = (data = {}) => ({
   ...EMPTY_STATS,
@@ -119,23 +115,23 @@ const normalizeStats = (data = {}) => ({
   },
 });
 
-const SummaryCard = ({ title, value, icon, color, subtitle }) => (
-  <div className="col-12 col-sm-6 col-xl-4 col-xxl-3">
-    <div className="card border-0 shadow-sm h-100 dashboard-summary-card">
-      <div className="card-body d-flex align-items-center justify-content-between gap-3">
+const SummaryCard = ({ title, value, icon, color, subtitle, linkTo }) => {
+  const content = (
+    <div className="card border-0 shadow-sm h-100 dashboard-summary-card p-3 rounded-4">
+      <div className="card-body p-0 d-flex align-items-center justify-content-between gap-3">
         <div className="min-w-0">
-          <p className="text-muted mb-2 small">{title}</p>
+          <p className="text-muted mb-2 small text-uppercase fw-bold text-truncate">{title}</p>
           <h3 className="fw-bold mb-1 text-break">{value}</h3>
           {subtitle && <small className="text-muted">{subtitle}</small>}
         </div>
         <div
           className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
           style={{
-            width: 54,
-            height: 54,
+            width: 50,
+            height: 50,
             color,
             backgroundColor: `${color}18`,
-            fontSize: 23,
+            fontSize: 21,
           }}
           aria-hidden="true"
         >
@@ -143,21 +139,33 @@ const SummaryCard = ({ title, value, icon, color, subtitle }) => (
         </div>
       </div>
     </div>
-  </div>
-);
+  );
+
+  return (
+    <div className="col-12 col-sm-6 col-xl-4">
+      {linkTo ? (
+        <Link to={linkTo} className="text-decoration-none">
+          {content}
+        </Link>
+      ) : (
+        content
+      )}
+    </div>
+  );
+};
 
 const EmptyState = ({ children }) => (
-  <div className="text-center text-muted py-5">
-    <FaChartLine className="mb-2" size={26} />
-    <p className="mb-0">{children}</p>
+  <div className="text-center text-muted py-4">
+    <FaChartLine className="mb-2" size={24} />
+    <p className="mb-0 small">{children}</p>
   </div>
 );
 
 const ChartCard = ({ title, subtitle, icon, children }) => (
-  <div className="card border-0 shadow-sm h-100">
+  <div className="card border-0 shadow-sm h-100 rounded-4">
     <div className="card-body p-3 p-md-4">
       <div className="mb-3">
-        <h5 className="fw-bold mb-1">
+        <h5 className="fw-bold mb-1 fs-6 fs-md-5">
           {icon && <span className="me-2 text-success">{icon}</span>}
           {title}
         </h5>
@@ -270,6 +278,7 @@ const AdminDashboard = () => {
     setAppliedDates({ startDate: "", endDate: "" });
   };
 
+  // Best 5 Overview Cards linked directly to Side Bar routes
   const summaryCards = useMemo(
     () => [
       {
@@ -277,66 +286,46 @@ const AdminDashboard = () => {
         value: formatNumber(stats.totalUsers),
         icon: <FaUsers />,
         color: "#0d6efd",
+        linkTo: "/admin/users",
       },
       {
         title: "Total Farmers",
         value: formatNumber(stats.totalFarmers),
         icon: <FaUserTie />,
         color: "#198754",
+        linkTo: "/admin/farmers",
       },
       {
         title: "Total Farms",
         value: formatNumber(stats.totalFarms),
         icon: <FaTractor />,
         color: "#fd7e14",
+        linkTo: "/admin/farms",
       },
       {
         title: "Total Crops",
         value: formatNumber(stats.totalCrops),
         icon: <FaSeedling />,
         color: "#20c997",
+        linkTo: "/admin/reports",
       },
       {
-        title: "Total Fields",
-        value: formatNumber(stats.totalFields),
-        icon: <FaLayerGroup />,
+        title: "Supply Applications",
+        value: formatNumber(stats.totalApplications || 0),
+        icon: <FaClipboardList />,
         color: "#6f42c1",
-      },
-      {
-        title: "Total Harvests",
-        value: formatNumber(stats.totalHarvests),
-        icon: <FaBoxOpen />,
-        color: "#d63384",
-      },
-      {
-        title: "Expense Records",
-        value: formatNumber(stats.totalExpenses),
-        icon: <FaMoneyBillWave />,
-        color: "#dc3545",
-      },
-      {
-        title: "Farm Activities",
-        value: formatNumber(stats.totalActivities),
-        icon: <FaTasks />,
-        color: "#20c997",
-      },
-      {
-        title: "Total Labor Costs",
-        value: formatMoney(stats.totalLaborCosts),
-        icon: <FaMoneyBillWave />,
-        color: "#fd7e14",
+        linkTo: "/admin/applications",
       },
     ],
     [stats]
   );
 
-  const activitySummary = stats.filteredActivitySummary;
   const hasDateFilter = Boolean(appliedDates.startDate || appliedDates.endDate);
 
   if (loading && !hasLoaded) {
     return (
-      <div className="container-fluid py-4">
-        <div className="card border-0 shadow-sm">
+      <div className="container-fluid py-4 px-3">
+        <div className="card border-0 shadow-sm rounded-4">
           <div className="card-body d-flex align-items-center gap-3 py-5">
             <div
               className="spinner-border text-success"
@@ -345,7 +334,7 @@ const AdminDashboard = () => {
             />
             <div>
               <h5 className="mb-1">Loading admin dashboard...</h5>
-              <p className="text-muted mb-0">
+              <p className="text-muted mb-0 small">
                 Gathering your agriculture management statistics.
               </p>
             </div>
@@ -357,14 +346,14 @@ const AdminDashboard = () => {
 
   if (error && !hasLoaded) {
     return (
-      <div className="container-fluid py-4">
-        <div className="card border-0 shadow-sm">
+      <div className="container-fluid py-4 px-3">
+        <div className="card border-0 shadow-sm rounded-4">
           <div className="card-body text-center py-5">
             <FaExclamationTriangle className="text-danger mb-3" size={38} />
-            <h2 className="fw-bold mb-2">Unable to load dashboard</h2>
-            <p className="text-muted mb-4">{error}</p>
+            <h2 className="fw-bold mb-2 fs-4">Unable to load dashboard</h2>
+            <p className="text-muted mb-4 small">{error}</p>
             <button
-              className="btn btn-success"
+              className="btn btn-success btn-sm"
               type="button"
               onClick={fetchDashboardStats}
               disabled={loading}
@@ -379,7 +368,7 @@ const AdminDashboard = () => {
   }
 
   return (
-    <div className="container-fluid py-4 admin-dashboard">
+    <div className="container-fluid px-2 px-md-4 py-4 admin-dashboard">
       <style>{`
         .dashboard-summary-card {
           border-radius: 14px;
@@ -391,27 +380,27 @@ const AdminDashboard = () => {
         }
         .dashboard-panel { border-radius: 14px; overflow: hidden; }
         .admin-dashboard .table th { white-space: nowrap; }
-        .admin-dashboard .chart-wrap { min-width: 0; }
+        .admin-dashboard .chart-wrap { min-width: 0; width: 100%; }
       `}</style>
 
       {/* Dashboard heading */}
-      <div className="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+      <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
         <div>
           <div className="d-flex align-items-center gap-2 mb-1">
             <span
               className="rounded-circle d-inline-flex align-items-center justify-content-center"
               style={{
-                width: 42,
-                height: 42,
+                width: 38,
+                height: 38,
                 color: "#198754",
                 backgroundColor: "#e8f5e9",
               }}
             >
-              <FaLeaf size={20} />
+              <FaLeaf size={18} />
             </span>
-            <h2 className="fw-bold mb-0">Admin Dashboard</h2>
+            <h2 className="fw-bold mb-0 fs-4">Admin Dashboard</h2>
           </div>
-          <p className="text-muted mb-0">
+          <p className="text-muted mb-0 small">
             Monitor users, farms, crops, finances, harvests, and activities.
           </p>
         </div>
@@ -419,32 +408,32 @@ const AdminDashboard = () => {
         <div className="d-flex align-items-center gap-2">
           {loading && hasLoaded && (
             <span className="small text-muted">
-              <span className="spinner-border spinner-border-sm text-success me-2" />
+              <span className="spinner-border spinner-border-sm text-success me-1" />
               Refreshing...
             </span>
           )}
-          <span className="badge bg-success fs-6 py-2 px-3">
+          <span className="badge bg-success py-2 px-3">
             Smart Agriculture
           </span>
         </div>
       </div>
 
       {error && hasLoaded && (
-        <div className="alert alert-warning d-flex flex-wrap align-items-center justify-content-between gap-2">
-          <span>{error} Showing the last successfully loaded data.</span>
+        <div className="alert alert-warning d-flex flex-wrap align-items-center justify-content-between gap-2 small">
+          <span>{error} Showing last successfully loaded data.</span>
           <button
             type="button"
-            className="btn btn-sm btn-outline-dark"
+            className="btn btn-sm btn-outline-dark py-0 px-2"
             onClick={fetchDashboardStats}
             disabled={loading}
           >
-            <FaRedoAlt className="me-2" />
+            <FaRedoAlt className="me-1" />
             Retry
           </button>
         </div>
       )}
 
-      {/* All-time summary cards */}
+      {/* Best 5 Summary Cards */}
       <div className="row g-3 mb-4">
         {summaryCards.map((card) => (
           <SummaryCard key={card.title} {...card} />
@@ -459,26 +448,25 @@ const AdminDashboard = () => {
               <div
                 className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
                 style={{
-                  width: 60,
-                  height: 60,
+                  width: 50,
+                  height: 50,
                   backgroundColor: "#e8f5e9",
                   color: "#198754",
-                  fontSize: 26,
+                  fontSize: 22,
                 }}
               >
                 <FaBalanceScale />
               </div>
               <div>
-                <h5 className="fw-bold mb-1">Farm Comparison</h5>
-                <p className="text-muted mb-0">
-                  Compare revenue, expenses, labor costs, and net profit across
-                  farms.
+                <h5 className="fw-bold mb-1 fs-6">Farm Comparison</h5>
+                <p className="text-muted mb-0 small">
+                  Compare revenue, expenses, labor costs, and net profit across farms.
                 </p>
               </div>
             </div>
             <Link
               to="/admin/farm-comparison"
-              className="btn btn-success flex-shrink-0"
+              className="btn btn-success btn-sm flex-shrink-0"
             >
               <FaChartLine className="me-2" />
               Compare Farms
@@ -493,18 +481,18 @@ const AdminDashboard = () => {
           <ChartCard title="Crop and Harvest Overview">
             {stats.cropHarvestOverview.length ? (
               <div className="chart-wrap">
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={stats.cropHarvestOverview}>
+                <ResponsiveContainer width="100%" height={260}>
+                  <BarChart data={stats.cropHarvestOverview} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                    <YAxis allowDecimals={false} />
+                    <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                    <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
                     <Tooltip />
-                    <Legend />
+                    <Legend wrapperStyle={{ fontSize: '12px' }} />
                     <Bar
                       dataKey="total"
                       name="Records"
                       fill="#198754"
-                      radius={[5, 5, 0, 0]}
+                      radius={[4, 4, 0, 0]}
                     />
                   </BarChart>
                 </ResponsiveContainer>
@@ -519,7 +507,7 @@ const AdminDashboard = () => {
           <ChartCard title="User Distribution">
             {stats.userDistribution.length ? (
               <div className="chart-wrap">
-                <ResponsiveContainer width="100%" height={300}>
+                <ResponsiveContainer width="100%" height={260}>
                   <PieChart>
                     <Pie
                       data={stats.userDistribution}
@@ -527,7 +515,7 @@ const AdminDashboard = () => {
                       nameKey="role"
                       cx="50%"
                       cy="50%"
-                      outerRadius={95}
+                      outerRadius={80}
                       label={({ role, name, value }) =>
                         `${role || name || "User"}: ${value ?? ""}`
                       }
@@ -540,7 +528,7 @@ const AdminDashboard = () => {
                       ))}
                     </Pie>
                     <Tooltip />
-                    <Legend />
+                    <Legend wrapperStyle={{ fontSize: '12px' }} />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
@@ -556,11 +544,11 @@ const AdminDashboard = () => {
         <div className="card-body p-3 p-md-4">
           <div className="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
             <div>
-              <h4 className="fw-bold mb-1">
+              <h4 className="fw-bold mb-1 fs-5">
                 <FaTasks className="me-2 text-success" />
                 Farm Activity Analytics
               </h4>
-              <p className="text-muted mb-0">
+              <p className="text-muted mb-0 small">
                 Filter activity counts and labor costs by date.
               </p>
             </div>
@@ -572,89 +560,53 @@ const AdminDashboard = () => {
           <form onSubmit={applyFilters}>
             <div className="row g-3 align-items-end">
               <div className="col-12 col-md-4">
-                <label htmlFor="activityStartDate" className="form-label">
+                <label htmlFor="activityStartDate" className="form-label small fw-semibold">
                   <FaCalendarAlt className="me-2" />
                   Start date
                 </label>
                 <input
                   id="activityStartDate"
                   type="date"
-                  className="form-control"
+                  className="form-control form-control-sm"
                   value={startDate}
                   max={endDate || undefined}
                   onChange={(event) => setStartDate(event.target.value)}
                 />
               </div>
               <div className="col-12 col-md-4">
-                <label htmlFor="activityEndDate" className="form-label">
+                <label htmlFor="activityEndDate" className="form-label small fw-semibold">
                   <FaCalendarAlt className="me-2" />
                   End date
                 </label>
                 <input
                   id="activityEndDate"
                   type="date"
-                  className="form-control"
+                  className="form-control form-control-sm"
                   value={endDate}
                   min={startDate || undefined}
                   onChange={(event) => setEndDate(event.target.value)}
                 />
               </div>
               <div className="col-12 col-md-4 d-flex flex-wrap gap-2">
-                <button type="submit" className="btn btn-success">
-                  <FaFilter className="me-2" />
-                  Apply Filters
+                <button type="submit" className="btn btn-success btn-sm">
+                  <FaFilter className="me-1" />
+                  Apply
                 </button>
                 <button
                   type="button"
-                  className="btn btn-outline-secondary"
+                  className="btn btn-outline-secondary btn-sm"
                   onClick={clearFilters}
                 >
-                  <FaTimes className="me-2" />
-                  Clear Filters
+                  <FaTimes className="me-1" />
+                  Clear
                 </button>
               </div>
             </div>
           </form>
-
-          <p className="small text-muted mt-3 mb-0">
-            {hasDateFilter
-              ? `Showing activities ${
-                  appliedDates.startDate
-                    ? `from ${formatDate(appliedDates.startDate)}`
-                    : "from the beginning"
-                } ${
-                  appliedDates.endDate
-                    ? `through ${formatDate(appliedDates.endDate)}`
-                    : "through the latest available date"
-                }.`
-              : "Showing all recorded farm activities. Choose dates to narrow the results."}
-          </p>
         </div>
       </div>
 
-      {/* Selected-period summary cards */}
-      <div className="row g-3 mb-4">
-        <div className="col-12 col-md-6">
-          <SummaryCard
-            title="Activities in Selected Period"
-            value={formatNumber(activitySummary.totalActivities)}
-            icon={<FaTasks />}
-            color="#198754"
-            subtitle={hasDateFilter ? "Selected date range" : "All recorded dates"}
-          />
-        </div>
-        <div className="col-12 col-md-6">
-          <SummaryCard
-            title="Labor Costs in Selected Period"
-            value={formatMoney(activitySummary.totalLaborCosts)}
-            icon={<FaMoneyBillWave />}
-            color="#fd7e14"
-            subtitle={hasDateFilter ? "Selected date range" : "All recorded dates"}
-          />
-        </div>
-      </div>
-
-      {/* Activities by type */}
+      {/* Activities by Type Chart */}
       <div className="row g-4 mb-4">
         <div className="col-12">
           <ChartCard
@@ -664,28 +616,21 @@ const AdminDashboard = () => {
           >
             {stats.activityTypeOverview.length ? (
               <div className="chart-wrap">
-                <ResponsiveContainer width="100%" height={320}>
+                <ResponsiveContainer width="100%" height={280}>
                   <BarChart
                     data={stats.activityTypeOverview}
-                    margin={{ top: 10, right: 20, left: 5, bottom: 10 }}
+                    margin={{ top: 10, right: 20, left: -10, bottom: 10 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis
-                      dataKey="activityType"
-                      interval={0}
-                      angle={-15}
-                      textAnchor="end"
-                      height={65}
-                      tick={{ fontSize: 11 }}
-                    />
-                    <YAxis allowDecimals={false} />
+                    <XAxis dataKey="activityType" tick={{ fontSize: 11 }} />
+                    <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
                     <Tooltip />
-                    <Legend />
+                    <Legend wrapperStyle={{ fontSize: '12px' }} />
                     <Bar
                       dataKey="total"
                       name="Number of Activities"
                       fill="#198754"
-                      radius={[5, 5, 0, 0]}
+                      radius={[4, 4, 0, 0]}
                     />
                   </BarChart>
                 </ResponsiveContainer>
@@ -697,7 +642,7 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      {/* Labor costs chart and table */}
+      {/* Labor Costs by Activity & Highest Labor Costs Table */}
       <div className="row g-4 mb-4">
         <div className="col-12 col-lg-7">
           <ChartCard
@@ -706,27 +651,27 @@ const AdminDashboard = () => {
           >
             {stats.activityLaborOverview.length ? (
               <div className="chart-wrap">
-                <ResponsiveContainer width="100%" height={340}>
+                <ResponsiveContainer width="100%" height={300}>
                   <BarChart
                     data={stats.activityLaborOverview}
                     layout="vertical"
-                    margin={{ top: 5, right: 25, left: 25, bottom: 5 }}
+                    margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis type="number" />
+                    <XAxis type="number" tick={{ fontSize: 11 }} />
                     <YAxis
                       type="category"
                       dataKey="activityType"
-                      width={115}
+                      width={100}
                       tick={{ fontSize: 11 }}
                     />
                     <Tooltip formatter={(value) => formatMoney(value)} />
-                    <Legend />
+                    <Legend wrapperStyle={{ fontSize: '12px' }} />
                     <Bar
                       dataKey="totalLaborCost"
                       name="Labor Cost"
                       fill="#fd7e14"
-                      radius={[0, 5, 5, 0]}
+                      radius={[0, 4, 4, 0]}
                     />
                   </BarChart>
                 </ResponsiveContainer>
@@ -738,12 +683,12 @@ const AdminDashboard = () => {
         </div>
 
         <div className="col-12 col-lg-5">
-          <div className="card dashboard-panel border-0 shadow-sm h-100">
+          <div className="card dashboard-panel border-0 shadow-sm h-100 rounded-4">
             <div className="card-body p-3 p-md-4">
-              <h5 className="fw-bold mb-3">Highest Labor Costs</h5>
+              <h5 className="fw-bold mb-3 fs-6">Highest Labor Costs</h5>
               {stats.activityLaborOverview.length ? (
                 <div className="table-responsive">
-                  <table className="table table-hover align-middle">
+                  <table className="table table-hover align-middle small mb-0">
                     <thead className="table-success">
                       <tr>
                         <th>Activity</th>
@@ -759,9 +704,7 @@ const AdminDashboard = () => {
                             Number(a.totalLaborCost || 0)
                         )
                         .map((activity, index) => (
-                          <tr
-                            key={activity.activityType || `activity-${index}`}
-                          >
+                          <tr key={activity.activityType || `activity-${index}`}>
                             <td className="fw-semibold">
                               {safeText(activity.activityType)}
                             </td>
@@ -782,7 +725,7 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      {/* Monthly expenses */}
+      {/* Monthly Expenses */}
       <div className="row g-4 mb-4">
         <div className="col-12">
           <ChartCard
@@ -792,20 +735,20 @@ const AdminDashboard = () => {
           >
             {stats.monthlyExpenses.length ? (
               <div className="chart-wrap">
-                <ResponsiveContainer width="100%" height={320}>
-                  <LineChart data={stats.monthlyExpenses}>
+                <ResponsiveContainer width="100%" height={280}>
+                  <LineChart data={stats.monthlyExpenses} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-                    <YAxis tickFormatter={(value) => Number(value).toLocaleString()} />
+                    <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+                    <YAxis tick={{ fontSize: 11 }} tickFormatter={(value) => Number(value).toLocaleString()} />
                     <Tooltip formatter={(value) => formatMoney(value)} />
-                    <Legend />
+                    <Legend wrapperStyle={{ fontSize: '12px' }} />
                     <Line
                       type="monotone"
                       dataKey="total"
                       name="Expenses"
                       stroke="#dc3545"
-                      strokeWidth={3}
-                      activeDot={{ r: 6 }}
+                      strokeWidth={2.5}
+                      activeDot={{ r: 5 }}
                     />
                   </LineChart>
                 </ResponsiveContainer>
@@ -817,30 +760,30 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      {/* Monthly harvest revenue */}
+      {/* Monthly Harvest Revenue */}
       <div className="row g-4 mb-4">
         <div className="col-12">
           <ChartCard
             title="Monthly Harvest Revenue"
-            icon={<FaMoneyBillWave />}
+            icon={<FaChartLine />}
             subtitle="Recorded revenue from harvests over time."
           >
             {stats.monthlyHarvestRevenue.length ? (
               <div className="chart-wrap">
-                <ResponsiveContainer width="100%" height={320}>
-                  <LineChart data={stats.monthlyHarvestRevenue}>
+                <ResponsiveContainer width="100%" height={280}>
+                  <LineChart data={stats.monthlyHarvestRevenue} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-                    <YAxis tickFormatter={(value) => Number(value).toLocaleString()} />
+                    <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+                    <YAxis tick={{ fontSize: 11 }} tickFormatter={(value) => Number(value).toLocaleString()} />
                     <Tooltip formatter={(value) => formatMoney(value)} />
-                    <Legend />
+                    <Legend wrapperStyle={{ fontSize: '12px' }} />
                     <Line
                       type="monotone"
                       dataKey="total"
                       name="Harvest Revenue"
                       stroke="#198754"
-                      strokeWidth={3}
-                      activeDot={{ r: 6 }}
+                      strokeWidth={2.5}
+                      activeDot={{ r: 5 }}
                     />
                   </LineChart>
                 </ResponsiveContainer>
@@ -852,108 +795,13 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      {/* Monthly harvest quantities */}
-      <div className="row g-4 mb-4">
-        <div className="col-12">
-          <ChartCard
-            title="Monthly Harvest Quantity by Unit"
-            icon={<FaSeedling />}
-            subtitle="Harvest quantities grouped by unit."
-          >
-            {stats.monthlyHarvestQuantity.length && stats.quantityUnits.length ? (
-              <div className="chart-wrap">
-                <ResponsiveContainer width="100%" height={340}>
-                  <LineChart data={stats.monthlyHarvestQuantity}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    {stats.quantityUnits.map((unit, index) => (
-                      <Line
-                        key={unit}
-                        type="monotone"
-                        dataKey={unit}
-                        name={unit}
-                        stroke={COLORS[index % COLORS.length]}
-                        strokeWidth={2}
-                        connectNulls
-                      />
-                    ))}
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            ) : (
-              <EmptyState>
-                No harvest quantities recorded for the last six months.
-              </EmptyState>
-            )}
-          </ChartCard>
-        </div>
-      </div>
-
-      {/* Recent harvests */}
-      <div className="row g-4 mb-4">
-        <div className="col-12">
-          <div className="card dashboard-panel border-0 shadow-sm">
-            <div className="card-body p-3 p-md-4">
-              <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-                <h5 className="fw-bold mb-0">Recent Harvests</h5>
-                <span className="text-muted small">Latest 10 harvest records</span>
-              </div>
-              {stats.recentHarvests.length ? (
-                <div className="table-responsive">
-                  <table className="table table-striped table-hover align-middle mb-0">
-                    <thead className="table-success">
-                      <tr>
-                        <th>Harvest ID</th>
-                        <th>Crop Name</th>
-                        <th>Harvest Date</th>
-                        <th>Quantity</th>
-                        <th>Total Revenue</th>
-                        <th>Quality</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {stats.recentHarvests.map((harvest, index) => (
-                        <tr key={harvest.id ?? `harvest-${index}`}>
-                          <td>#{safeText(harvest.id)}</td>
-                          <td className="fw-semibold">
-                            {safeText(harvest.cropName, "Unknown crop")}
-                          </td>
-                          <td>{formatDate(harvest.harvestDate)}</td>
-                          <td className="text-nowrap">
-                            {formatNumber(harvest.quantity)}{" "}
-                            {safeText(harvest.quantityUnit, "Unknown")}
-                          </td>
-                          <td className="text-nowrap">
-                            {formatMoney(harvest.totalRevenue)}
-                          </td>
-                          <td>
-                            <span className="badge bg-light text-dark border">
-                              {safeText(harvest.quality, "Not specified")}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <EmptyState>No harvest records are available yet.</EmptyState>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Recent farm activities */}
       <div className="row g-4">
         <div className="col-12">
           <div className="card dashboard-panel border-0 shadow-sm">
             <div className="card-body p-3 p-md-4">
               <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-                <h5 className="fw-bold mb-0">
+                <h5 className="fw-bold mb-0 fs-6">
                   <FaTasks className="me-2 text-success" />
                   Recent Farm Activities
                 </h5>
@@ -961,7 +809,7 @@ const AdminDashboard = () => {
               </div>
               {stats.recentActivities.length ? (
                 <div className="table-responsive">
-                  <table className="table table-striped table-hover align-middle mb-0">
+                  <table className="table table-striped table-hover align-middle mb-0 small">
                     <thead className="table-success">
                       <tr>
                         <th>Activity</th>
@@ -985,11 +833,11 @@ const AdminDashboard = () => {
                           </td>
                           <td>{safeText(activity.fieldId)}</td>
                           <td>{formatDate(activity.activityDate)}</td>
-                          <td style={{ minWidth: 180 }}>
+                          <td style={{ minWidth: 160 }}>
                             {safeText(activity.description)}
                           </td>
                           <td className="text-nowrap">
-                            {formatMoney(activity.laborCost)}
+                            {formatNumber(activity.laborCost)}
                           </td>
                         </tr>
                       ))}
