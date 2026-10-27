@@ -202,6 +202,7 @@ function Dashboard() {
 
   const estimatedProfit = toNumber(summary?.estimated_profit);
 
+  // Summary Cards linked directly to corresponding Farmer Sidebar routes
   const summaryCards = [
     {
       title: "Total Farms",
@@ -270,6 +271,7 @@ function Dashboard() {
           ? "bg-success-subtle text-success"
           : "bg-danger-subtle text-danger",
       valueClass: estimatedProfit >= 0 ? "text-success" : "text-danger",
+      linkTo: "/farmer/reports",
     },
   ];
 
@@ -346,7 +348,7 @@ function Dashboard() {
         </div>
       )}
 
-      {/* Summary cards - Responsive grid for mobile/tablet */}
+      {/* Summary cards linked directly to sidebar pages */}
       <div className="row g-2 g-xl-3">
         {summaryCards.map((card) => {
           const cardContent = (
