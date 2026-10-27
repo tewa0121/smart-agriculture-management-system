@@ -11,6 +11,7 @@ import {
   FaBars,
   FaTimes,
   FaBalanceScale,
+  FaClipboardList,
 } from "react-icons/fa";
 
 import { useAuth } from "../context/AuthContext";
@@ -59,6 +60,11 @@ function AdminLayout() {
       path: "/admin/farm-comparison",
       icon: <FaBalanceScale />,
     },
+    {
+      label: "Supply Applications",
+      path: "/admin/applications",
+      icon: <FaClipboardList />,
+    },
   ];
 
   return (
@@ -95,13 +101,8 @@ function AdminLayout() {
             </div>
 
             <div>
-              <h5 className="mb-0 fw-bold">
-                Smart Agriculture
-              </h5>
-
-              <small className="text-secondary">
-                Administration
-              </small>
+              <h5 className="mb-0 fw-bold">Smart Agriculture</h5>
+              <small className="text-secondary">Administration</small>
             </div>
           </div>
         </div>
@@ -121,9 +122,7 @@ function AdminLayout() {
                 onClick={() => setSidebarOpen(false)}
                 className={({ isActive }) =>
                   `sidebar-link text-decoration-none rounded px-3 py-2 d-flex align-items-center gap-3 ${
-                    isActive
-                      ? "bg-success text-white"
-                      : "text-light"
+                    isActive ? "bg-success text-white" : "text-light"
                   }`
                 }
               >
@@ -137,17 +136,9 @@ function AdminLayout() {
         {/* User and logout */}
         <div className="px-3 pt-3 pb-3 border-top border-secondary mt-auto">
           <div className="px-2 mb-2">
-            <small className="text-secondary">
-              Signed in as
-            </small>
-
-            <div className="fw-semibold">
-              {user?.name || "Administrator"}
-            </div>
-
-            <small className="text-secondary">
-              {user?.email || ""}
-            </small>
+            <small className="text-secondary">Signed in as</small>
+            <div className="fw-semibold">{user?.name || "Administrator"}</div>
+            <small className="text-secondary">{user?.email || ""}</small>
           </div>
 
           <button
@@ -156,12 +147,6 @@ function AdminLayout() {
             style={{
               backgroundColor: "#198754",
               transition: "background-color 0.2s ease",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = "#146c43";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = "#198754";
             }}
             onClick={handleLogout}
           >
@@ -173,7 +158,6 @@ function AdminLayout() {
 
       {/* Main content */}
       <main className="flex-grow-1">
-        {/* Header */}
         <header className="bg-white border-bottom px-3 px-md-4 py-3">
           <div className="d-flex justify-content-between align-items-center">
             <div className="d-flex align-items-center gap-3">
@@ -181,16 +165,12 @@ function AdminLayout() {
                 type="button"
                 className="btn btn-outline-success d-md-none"
                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                aria-label="Toggle navigation menu"
               >
                 {sidebarOpen ? <FaTimes /> : <FaBars />}
               </button>
 
               <div>
-                <h5 className="mb-0 fw-semibold">
-                  Admin Portal
-                </h5>
-
+                <h5 className="mb-0 fw-semibold">Admin Portal</h5>
                 <small className="text-muted d-none d-sm-block">
                   Manage users and agricultural operations
                 </small>
@@ -198,18 +178,12 @@ function AdminLayout() {
             </div>
 
             <div className="text-end d-none d-sm-block">
-              <div className="fw-semibold">
-                {user?.name || "Administrator"}
-              </div>
-
-              <small className="text-muted">
-                Administrator
-              </small>
+              <div className="fw-semibold">{user?.name || "Administrator"}</div>
+              <small className="text-muted">Administrator</small>
             </div>
           </div>
         </header>
 
-        {/* Page content */}
         <div>
           <Outlet />
         </div>
