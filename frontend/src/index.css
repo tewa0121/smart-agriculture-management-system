@@ -1,36 +1,40 @@
-/* Farmer portal responsive layout */
 
-@media (max-width: 991.98px) {
-  .farmer-sidebar {
-    width: 220px !important;
-    min-width: 220px !important;
-  }
+body.dark-mode, 
+.d-flex.min-vh-100.bg-dark, 
+main.bg-dark {
+  background-color: #121212 !important;
+  color: #e0e0e0 !important;
 }
 
-@media (max-width: 767.98px) {
-  .farmer-sidebar {
-    width: 70px !important;
-    min-width: 70px !important;
-  }
 
-  .farmer-sidebar .sidebar-brand-text,
-  .farmer-sidebar .sidebar-menu-label,
-  .farmer-sidebar .sidebar-user-info,
-  .farmer-sidebar .sidebar-logout-text {
-    display: none;
-  }
+.dark-mode .card,
+.bg-dark .card,
+.bg-dark .bg-white,
+.d-flex.min-vh-100.bg-dark .bg-white {
+  background-color: #1e1e1e !important;
+  color: #ffffff !important;
+  border-color: #2c2c2c !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5) !important;
+}
 
-  .farmer-sidebar .sidebar-brand {
-    justify-content: center;
-  }
 
-  .farmer-sidebar .sidebar-link {
-    justify-content: center;
-    padding-left: 0.75rem !important;
-    padding-right: 0.75rem !important;
-  }
+.dark-mode table,
+.bg-dark table {
+  color: #ffffff !important;
+}
 
-  .farmer-sidebar .sidebar-logout {
-    justify-content: center;
-  }
+.dark-mode input, 
+.dark-mode select, 
+.dark-mode textarea,
+.bg-dark input,
+.bg-dark select,
+.bg-dark textarea {
+  background-color: #2a2a2a !important;
+  color: #ffffff !important;
+  border-color: #404040 !important;
+}
+
+.dark-mode input::placeholder,
+.bg-dark input::placeholder {
+  color: #9ca3af !important;
 }
