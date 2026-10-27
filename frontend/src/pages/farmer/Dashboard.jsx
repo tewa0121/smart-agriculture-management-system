@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 
 import {
   BarChart,
@@ -24,6 +25,7 @@ import {
   FaArrowDown,
   FaSyncAlt,
   FaExclamationTriangle,
+  FaPaperPlane,
 } from "react-icons/fa";
 
 import api from "../../services/api";
@@ -34,7 +36,6 @@ const MONTH_NAMES = [
 ];
 
 function getResponseData(response) {
-  // Supports APIs returning either { data: [...] } or the array/object directly.
   return response?.data?.data ?? response?.data ?? null;
 }
 
@@ -137,7 +138,6 @@ function Dashboard() {
   const formatDate = (date) => {
     if (!date) return "—";
 
-    // Parse YYYY-MM-DD as a local date to avoid timezone shifts.
     if (typeof date === "string" && /^\d{4}-\d{2}-\d{2}/.test(date)) {
       const [year, month, day] = date.substring(0, 10).split("-");
       const localDate = new Date(Number(year), Number(month) - 1, Number(day));
@@ -208,36 +208,42 @@ function Dashboard() {
       value: formatNumber(summary?.total_farms),
       icon: <FaTractor />,
       iconClass: "bg-success-subtle text-success",
+      linkTo: "/farmer/farms",
     },
     {
       title: "Total Fields",
       value: formatNumber(summary?.total_fields),
       icon: <FaMapMarkedAlt />,
       iconClass: "bg-primary-subtle text-primary",
+      linkTo: "/farmer/fields",
     },
     {
       title: "Active Crops",
       value: formatNumber(summary?.active_crops),
       icon: <FaSeedling />,
       iconClass: "bg-warning-subtle text-warning",
+      linkTo: "/farmer/crops",
     },
     {
       title: "Upcoming Irrigation",
       value: formatNumber(summary?.upcoming_irrigation),
       icon: <FaTint />,
       iconClass: "bg-info-subtle text-info",
+      linkTo: "/farmer/irrigation",
     },
     {
       title: "Upcoming Fertilizer",
       value: formatNumber(summary?.upcoming_fertilizer),
       icon: <FaFlask />,
       iconClass: "bg-warning-subtle text-warning",
+      linkTo: "/farmer/fertilizers",
     },
     {
       title: "Upcoming Harvests",
       value: formatNumber(summary?.upcoming_harvests),
       icon: <FaCalendarAlt />,
       iconClass: "bg-success-subtle text-success",
+      linkTo: "/farmer/harvests",
     },
     {
       title: "Total Expenses",
@@ -245,6 +251,7 @@ function Dashboard() {
       icon: <FaMoneyBillWave />,
       iconClass: "bg-danger-subtle text-danger",
       valueClass: "text-danger",
+      linkTo: "/farmer/expenses",
     },
     {
       title: "Total Revenue",
@@ -252,6 +259,7 @@ function Dashboard() {
       icon: <FaArrowUp />,
       iconClass: "bg-success-subtle text-success",
       valueClass: "text-success",
+      linkTo: "/farmer/harvests",
     },
     {
       title: "Estimated Profit",
@@ -267,12 +275,12 @@ function Dashboard() {
 
   if (loading) {
     return (
-      <div className="container-fluid py-4">
+      <div className="container-fluid py-4 px-3">
         <div className="text-center py-5">
           <div className="spinner-border text-success" role="status">
             <span className="visually-hidden">Loading...</span>
           </div>
-          <p className="text-muted mt-3 mb-0">Loading farmer dashboard...</p>
+          <p className="text-muted mt-3 mb-0 small">Loading farmer dashboard...</p>
         </div>
       </div>
     );
@@ -280,8 +288,8 @@ function Dashboard() {
 
   if (error && !summary) {
     return (
-      <div className="container-fluid py-4">
-        <div className="alert alert-danger border-0 shadow-sm" role="alert">
+      <div className="container-fluid py-4 px-3">
+        <div className="alert alert-danger border-0 shadow-sm small" role="alert">
           <div className="d-flex align-items-start gap-2">
             <FaExclamationTriangle className="mt-1" />
             <div className="flex-grow-1">
@@ -303,24 +311,26 @@ function Dashboard() {
   }
 
   return (
-    <div className="container-fluid py-4">
+    <div className="container-fluid px-2 px-md-4 py-4 farmer-dashboard">
       {/* Page header */}
       <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
         <div>
-          <h2 className="fw-bold mb-1">Farmer Dashboard</h2>
-          <p className="text-muted mb-0">
+          <h2 className="fw-bold mb-1 fs-4">Farmer Dashboard</h2>
+          <p className="text-muted mb-0 small">
             Overview of your farms, crops, finances, and agricultural activities.
           </p>
         </div>
 
         <div className="d-flex align-items-center gap-2 flex-wrap">
-          <span className="badge bg-success-subtle text-success px-3 py-2">
-            <FaSeedling className="me-2" />
-            Smart Agriculture
-          </span>
+          <Link
+            to="/farmer/apply-supplies"
+            className="btn btn-success btn-sm d-flex align-items-center gap-2 py-2 px-3"
+          >
+            <FaPaperPlane /> Request Supplies
+          </Link>
           <button
             type="button"
-            className="btn btn-outline-success btn-sm"
+            className="btn btn-outline-success btn-sm py-2"
             onClick={() => loadDashboard({ silent: true })}
             disabled={refreshing}
           >
@@ -331,33 +341,33 @@ function Dashboard() {
       </div>
 
       {error && (
-        <div className="alert alert-warning py-2" role="alert">
+        <div className="alert alert-warning py-2 small" role="alert">
           <strong>Some data may be out of date:</strong> {error}
         </div>
       )}
 
-      {/* Summary cards */}
-      <div className="row g-3 g-xl-4">
-        {summaryCards.map((card) => (
-          <div className="col-12 col-sm-6 col-lg-4 col-xl-3" key={card.title}>
-            <div className="card border-0 shadow-sm h-100">
-              <div className="card-body p-3 p-lg-4">
-                <div className="d-flex justify-content-between align-items-start gap-3">
+      {/* Summary cards - Responsive grid for mobile/tablet */}
+      <div className="row g-2 g-xl-3">
+        {summaryCards.map((card) => {
+          const cardContent = (
+            <div className="card border-0 shadow-sm h-100 dashboard-summary-card rounded-4">
+              <div className="card-body p-3">
+                <div className="d-flex justify-content-between align-items-start gap-2">
                   <div className="min-w-0">
-                    <p className="text-muted mb-2 small fw-semibold">
+                    <p className="text-muted mb-1 small fw-semibold text-truncate">
                       {card.title}
                     </p>
-                    <h3
-                      className={`fw-bold mb-0 text-break ${
+                    <h4
+                      className={`fw-bold mb-0 text-break fs-5 ${
                         card.valueClass || ""
                       }`}
                     >
                       {card.value}
-                    </h3>
+                    </h4>
                   </div>
                   <div
                     className={`rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 ${card.iconClass}`}
-                    style={{ width: 48, height: 48, fontSize: 18 }}
+                    style={{ width: 42, height: 42, fontSize: 16 }}
                     aria-hidden="true"
                   >
                     {card.icon}
@@ -365,67 +375,80 @@ function Dashboard() {
                 </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+
+          return (
+            <div className="col-12 col-sm-6 col-xl-4" key={card.title}>
+              {card.linkTo ? (
+                <Link to={card.linkTo} className="text-decoration-none">
+                  {cardContent}
+                </Link>
+              ) : (
+                cardContent
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {/* Financial chart and summary */}
       <div className="row g-3 g-xl-4 mt-1">
         <div className="col-12 col-xl-8">
-          <div className="card border-0 shadow-sm h-100">
+          <div className="card border-0 shadow-sm h-100 rounded-4">
             <div className="card-body p-3 p-lg-4">
-              <div className="d-flex justify-content-between align-items-start mb-4">
+              <div className="d-flex justify-content-between align-items-start mb-3">
                 <div>
-                  <h5 className="fw-bold mb-1">Revenue vs Expenses</h5>
+                  <h5 className="fw-bold mb-1 fs-6">Revenue vs Expenses</h5>
                   <p className="text-muted small mb-0">
                     Monthly financial performance
                   </p>
                 </div>
-                <FaChartLine className="text-success" size={22} />
+                <FaChartLine className="text-success" size={20} />
               </div>
 
               {financialData.length === 0 ? (
                 <div className="text-center py-5">
-                  <FaChartLine size={35} className="text-muted mb-3" />
-                  <p className="text-muted mb-0">
+                  <FaChartLine size={30} className="text-muted mb-2" />
+                  <p className="text-muted mb-0 small">
                     No financial data available.
                   </p>
                 </div>
               ) : (
-                <div style={{ width: "100%", height: 350, minWidth: 0 }}>
+                <div style={{ width: "100%", height: 300, minWidth: 0 }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart
                       data={financialData}
-                      margin={{ top: 10, right: 8, left: 0, bottom: 10 }}
+                      margin={{ top: 10, right: 8, left: -15, bottom: 10 }}
                     >
                       <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                      <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+                      <XAxis dataKey="month" tick={{ fontSize: 11 }} />
                       <YAxis
-                        tick={{ fontSize: 12 }}
+                        tick={{ fontSize: 11 }}
                         tickFormatter={(value) => Number(value).toLocaleString()}
-                        width={70}
+                        width={60}
                       />
                       <Tooltip
                         formatter={(value) => [formatNumber(value), ""]}
                         contentStyle={{
-                          borderRadius: 10,
+                          borderRadius: 8,
                           border: "1px solid #e9ecef",
+                          fontSize: "12px",
                         }}
                       />
-                      <Legend />
+                      <Legend wrapperStyle={{ fontSize: "12px" }} />
                       <Bar
                         dataKey="revenue"
                         name="Revenue"
                         fill="#198754"
                         radius={[4, 4, 0, 0]}
-                        maxBarSize={48}
+                        maxBarSize={40}
                       />
                       <Bar
                         dataKey="expenses"
                         name="Expenses"
                         fill="#dc3545"
                         radius={[4, 4, 0, 0]}
-                        maxBarSize={48}
+                        maxBarSize={40}
                       />
                     </BarChart>
                   </ResponsiveContainer>
@@ -436,23 +459,23 @@ function Dashboard() {
         </div>
 
         <div className="col-12 col-xl-4">
-          <div className="card border-0 shadow-sm h-100">
+          <div className="card border-0 shadow-sm h-100 rounded-4">
             <div className="card-body p-3 p-lg-4">
-              <div className="d-flex justify-content-between align-items-center mb-4">
-                <h5 className="fw-bold mb-0">Financial Summary</h5>
-                <FaMoneyBillWave className="text-success" size={22} />
+              <div className="d-flex justify-content-between align-items-center mb-3">
+                <h5 className="fw-bold mb-0 fs-6">Financial Summary</h5>
+                <FaMoneyBillWave className="text-success" size={20} />
               </div>
 
-              <div className="p-3 rounded bg-success-subtle mb-3">
+              <div className="p-3 rounded-3 bg-success-subtle mb-3">
                 <small className="text-muted">Total Revenue</small>
-                <h4 className="fw-bold text-success mb-0 mt-1">
+                <h4 className="fw-bold text-success mb-0 mt-1 fs-5">
                   {formatNumber(summary?.total_revenue)}
                 </h4>
               </div>
 
-              <div className="p-3 rounded bg-danger-subtle mb-3">
+              <div className="p-3 rounded-3 bg-danger-subtle mb-3">
                 <small className="text-muted">Total Expenses</small>
-                <h4 className="fw-bold text-danger mb-0 mt-1">
+                <h4 className="fw-bold text-danger mb-0 mt-1 fs-5">
                   {formatNumber(summary?.total_expenses)}
                 </h4>
               </div>
@@ -462,7 +485,7 @@ function Dashboard() {
                   <div>
                     <small className="text-muted">Estimated Profit</small>
                     <h3
-                      className={`fw-bold mb-0 mt-1 ${
+                      className={`fw-bold mb-0 mt-1 fs-5 ${
                         estimatedProfit >= 0 ? "text-success" : "text-danger"
                       }`}
                     >
@@ -470,15 +493,12 @@ function Dashboard() {
                     </h3>
                   </div>
                   {estimatedProfit >= 0 ? (
-                    <FaArrowUp className="text-success" size={24} />
+                    <FaArrowUp className="text-success" size={22} />
                   ) : (
-                    <FaArrowDown className="text-danger" size={24} />
+                    <FaArrowDown className="text-danger" size={22} />
                   )}
                 </div>
               </div>
-              <p className="text-muted small mt-3 mb-0">
-                Profit is calculated from the summary data returned by the server.
-              </p>
             </div>
           </div>
         </div>
@@ -487,45 +507,45 @@ function Dashboard() {
       {/* Crop production */}
       <div className="row g-3 g-xl-4 mt-1">
         <div className="col-12">
-          <div className="card border-0 shadow-sm">
+          <div className="card border-0 shadow-sm rounded-4">
             <div className="card-body p-3 p-lg-4">
-              <div className="d-flex justify-content-between align-items-start mb-4">
+              <div className="d-flex justify-content-between align-items-start mb-3">
                 <div>
-                  <h5 className="fw-bold mb-1">Crop Production</h5>
+                  <h5 className="fw-bold mb-1 fs-6">Crop Production</h5>
                   <p className="text-muted small mb-0">
                     Total harvested quantity by crop
                   </p>
                 </div>
-                <FaSeedling className="text-success" size={22} />
+                <FaSeedling className="text-success" size={20} />
               </div>
 
               {cropProductionData.length === 0 ? (
                 <div className="text-center py-5">
-                  <FaSeedling size={35} className="text-muted mb-3" />
-                  <p className="text-muted mb-0">
+                  <FaSeedling size={30} className="text-muted mb-2" />
+                  <p className="text-muted mb-0 small">
                     No crop production data available.
                   </p>
                 </div>
               ) : (
-                <div style={{ width: "100%", height: 350, minWidth: 0 }}>
+                <div style={{ width: "100%", height: 300, minWidth: 0 }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart
                       data={cropProductionData}
-                      margin={{ top: 10, right: 10, left: 0, bottom: 10 }}
+                      margin={{ top: 10, right: 10, left: -15, bottom: 10 }}
                     >
                       <CartesianGrid strokeDasharray="3 3" vertical={false} />
                       <XAxis
                         dataKey="crop_name"
-                        tick={{ fontSize: 12 }}
+                        tick={{ fontSize: 11 }}
                         interval={0}
                         angle={cropProductionData.length > 5 ? -20 : 0}
                         textAnchor={cropProductionData.length > 5 ? "end" : "middle"}
-                        height={cropProductionData.length > 5 ? 65 : 35}
+                        height={cropProductionData.length > 5 ? 60 : 30}
                       />
                       <YAxis
-                        tick={{ fontSize: 12 }}
+                        tick={{ fontSize: 11 }}
                         tickFormatter={(value) => Number(value).toLocaleString()}
-                        width={70}
+                        width={60}
                       />
                       <Tooltip
                         formatter={(value, _name, item) => [
@@ -535,27 +555,22 @@ function Dashboard() {
                           "Production",
                         ]}
                         contentStyle={{
-                          borderRadius: 10,
+                          borderRadius: 8,
                           border: "1px solid #e9ecef",
+                          fontSize: "12px",
                         }}
                       />
-                      <Legend />
+                      <Legend wrapperStyle={{ fontSize: "12px" }} />
                       <Bar
                         dataKey="total_quantity"
                         name="Production"
                         fill="#198754"
                         radius={[4, 4, 0, 0]}
-                        maxBarSize={60}
+                        maxBarSize={50}
                       />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
-              )}
-              {cropProductionData.length > 0 && (
-                <p className="text-muted small mb-0 mt-2">
-                  Quantities retain the unit provided for each crop; compare crops
-                  with care if their units differ.
-                </p>
               )}
             </div>
           </div>
@@ -565,16 +580,16 @@ function Dashboard() {
       {/* Upcoming activities */}
       <div className="row g-3 g-xl-4 mt-1">
         <div className="col-12">
-          <div className="card border-0 shadow-sm">
+          <div className="card border-0 shadow-sm rounded-4">
             <div className="card-body p-3 p-lg-4">
-              <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+              <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
                 <div>
-                  <h5 className="fw-bold mb-1">Upcoming Activities</h5>
+                  <h5 className="fw-bold mb-1 fs-6">Upcoming Activities</h5>
                   <p className="text-muted small mb-0">
                     Scheduled irrigation, fertilizer, and harvest activities
                   </p>
                 </div>
-                <span className="badge bg-success rounded-pill px-3 py-2 align-self-start align-self-md-center">
+                <span className="badge bg-success rounded-pill px-3 py-2 align-self-start align-self-md-center small">
                   {upcomingActivities.length}{" "}
                   {upcomingActivities.length === 1 ? "Activity" : "Activities"}
                 </span>
@@ -582,16 +597,15 @@ function Dashboard() {
 
               {upcomingActivities.length === 0 ? (
                 <div className="text-center py-5">
-                  <FaCalendarAlt size={35} className="text-muted mb-3" />
-                  <h6 className="fw-semibold">No upcoming activities</h6>
-                  <p className="text-muted mb-0">
-                    Your scheduled irrigation, fertilizer, and harvest activities
-                    will appear here.
+                  <FaCalendarAlt size={30} className="text-muted mb-2" />
+                  <h6 className="fw-semibold small">No upcoming activities</h6>
+                  <p className="text-muted mb-0 small">
+                    Your scheduled activities will appear here.
                   </p>
                 </div>
               ) : (
                 <div className="table-responsive">
-                  <table className="table table-hover align-middle mb-0">
+                  <table className="table table-hover align-middle mb-0 small">
                     <thead className="table-light">
                       <tr>
                         <th scope="col">Type</th>
@@ -611,12 +625,12 @@ function Dashboard() {
                         >
                           <td>
                             <span
-                              className={`badge rounded-pill px-3 py-2 ${getActivityBadgeClass(
+                              className={`badge rounded-pill px-2 py-1 ${getActivityBadgeClass(
                                 activity.activity_type
                               )}`}
                             >
                               <span
-                                className={`me-2 ${getActivityClass(
+                                className={`me-1 ${getActivityClass(
                                   activity.activity_type
                                 )}`}
                                 aria-hidden="true"

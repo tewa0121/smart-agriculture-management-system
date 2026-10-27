@@ -49,6 +49,7 @@ function AdminLayout() {
 
   return (
     <div className={`d-flex min-vh-100 ${darkMode ? "bg-dark text-white" : "bg-light text-dark"}`}>
+      {/* Backdrop for mobile when sidebar is open */}
       {sidebarOpen && (
         <div
           className="position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-50 d-md-none"
@@ -57,10 +58,10 @@ function AdminLayout() {
         />
       )}
 
-      {/* Sticky Sidebar */}
+      {/* Sticky Sidebar with mobile toggle logic */}
       <aside
         className={`farmer-sidebar ${darkMode ? "bg-black text-white border-end border-secondary" : "bg-dark text-white"} d-flex flex-column position-sticky top-0 ${
-          sidebarOpen ? "d-flex" : ""
+          sidebarOpen ? "d-flex position-fixed start-0" : "d-none d-md-flex"
         }`}
         style={{
           width: "260px",
@@ -72,17 +73,27 @@ function AdminLayout() {
         }}
       >
         <div className="px-4 py-3 border-bottom border-secondary flex-shrink-0">
-          <div className="d-flex align-items-center gap-2">
-            <div
-              className="bg-success rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
-              style={{ width: "42px", height: "42px" }}
+          <div className="d-flex align-items-center justify-content-between">
+            <div className="d-flex align-items-center gap-2">
+              <div
+                className="bg-success rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                style={{ width: "42px", height: "42px" }}
+              >
+                <FaSeedling size={21} />
+              </div>
+              <div>
+                <h5 className="mb-0 fw-bold">Smart Agriculture</h5>
+                <small className="text-secondary">Administration</small>
+              </div>
+            </div>
+            {/* Close button for mobile inside sidebar */}
+            <button
+              type="button"
+              className="btn btn-sm text-white d-md-none border-0"
+              onClick={() => setSidebarOpen(false)}
             >
-              <FaSeedling size={21} />
-            </div>
-            <div>
-              <h5 className="mb-0 fw-bold">Smart Agriculture</h5>
-              <small className="text-secondary">Administration</small>
-            </div>
+              <FaTimes size={18} />
+            </button>
           </div>
         </div>
 
@@ -129,11 +140,12 @@ function AdminLayout() {
         </div>
       </aside>
 
-      {/* Main Content with Full Dark Mode Background Support */}
+      {/* Main Content */}
       <main className={`flex-grow-1 overflow-x-hidden ${darkMode ? "bg-dark text-white" : "bg-light text-dark"}`}>
         <header className={`border-bottom px-3 px-md-4 py-3 sticky-top ${darkMode ? "bg-dark text-white border-secondary" : "bg-white text-dark"}`} style={{ zIndex: 1020 }}>
           <div className="d-flex justify-content-between align-items-center">
             <div className="d-flex align-items-center gap-3">
+              {/* Toggle Button for Mobile Sidebar */}
               <button
                 type="button"
                 className="btn btn-outline-success d-md-none"
