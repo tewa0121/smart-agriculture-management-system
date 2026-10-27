@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 
 import {
@@ -18,6 +18,8 @@ import {
   FaBars,
   FaTimes,
   FaPaperPlane,
+  FaSun,
+  FaMoon,
 } from "react-icons/fa";
 
 import { useAuth } from "../context/AuthContext";
@@ -25,8 +27,16 @@ import { useAuth } from "../context/AuthContext";
 function MainLayout() {
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [darkMode, setDarkMode] = useState(false);
+  const [currentDate, setCurrentDate] = useState("");
 
   const { user, logout } = useAuth();
+
+  useEffect(() => {
+    // አውቶማቲክ ቀን እና ዕለት ማመጣጫ (Automatic Day & Date)
+    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    setCurrentDate(new Date().toLocaleDateString('en-US', options));
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -51,7 +61,7 @@ function MainLayout() {
   ];
 
   return (
-    <div className="d-flex min-vh-100 bg-light">
+    <div className={`d-flex min-vh-100 ${darkMode ? "bg-dark text-white" : "bg-light text-dark"}`}>
       {sidebarOpen && (
         <div
           className="position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-50 d-md-none"
@@ -62,7 +72,7 @@ function MainLayout() {
 
       {/* Sticky Sidebar */}
       <aside
-        className={`farmer-sidebar bg-dark text-white d-flex flex-column position-sticky top-0 ${
+        className={`farmer-sidebar ${darkMode ? "bg-black text-white border-end border-secondary" : "bg-dark text-white"} d-flex flex-column position-sticky top-0 ${
           sidebarOpen ? "d-flex" : ""
         }`}
         style={{
@@ -112,7 +122,7 @@ function MainLayout() {
           </div>
         </nav>
 
-        <div className="px-3 pt-2 pb-3 border-top border-secondary flex-shrink-0 bg-dark sidebar-user-info">
+        <div className={`px-3 pt-2 pb-3 border-top border-secondary flex-shrink-0 sidebar-user-info ${darkMode ? "bg-black" : "bg-dark"}`}>
           <div className="px-2 mb-2">
             <small className="text-secondary">Signed in as</small>
             <div className="fw-semibold">{user?.name || "Farmer"}</div>
@@ -131,7 +141,8 @@ function MainLayout() {
       </aside>
 
       <main className="flex-grow-1 overflow-x-hidden">
-        <header className="bg-white border-bottom px-3 px-md-4 py-3 sticky-top" style={{ zIndex: 1020 }}>
+        {/* Header with Automatic Date & Theme Toggle */}
+        <header className={`border-bottom px-3 px-md-4 py-3 sticky-top ${darkMode ? "bg-dark text-white border-secondary" : "bg-white text-dark"}`} style={{ zIndex: 1020 }}>
           <div className="d-flex justify-content-between align-items-center">
             <div className="d-flex align-items-center gap-3">
               <button
@@ -143,14 +154,29 @@ function MainLayout() {
               </button>
               <div>
                 <h5 className="mb-0 fw-semibold">Farmer Portal</h5>
-                <small className="text-muted d-none d-sm-block">
-                  Manage your agricultural operations
+                <small className={darkMode ? "text-light opacity-75" : "text-muted"}>
+                  📅 {currentDate}
                 </small>
               </div>
             </div>
-            <div className="text-end d-none d-sm-block">
-              <div className="fw-semibold">{user?.name || "Farmer"}</div>
-              <small className="text-muted">{user?.email || ""}</small>
+
+            <div className="d-flex align-items-center gap-3">
+              {/* Dark / Sunny Mode Toggle Button */}
+              <button
+                onClick={() => setDarkMode(!darkMode)}
+                className={`btn btn-sm rounded-pill px-3 py-2 d-flex align-items-center gap-2 ${
+                  darkMode ? "btn-warning text-dark" : "btn-dark text-white"
+                }`}
+                title="Toggle Theme"
+              >
+                {darkMode ? <FaSun /> : <FaMoon />}
+                <span className="d-none d-sm-inline">{darkMode ? "Sunny Mode" : "Dark Mode"}</span>
+              </button>
+
+              <div className="text-end d-none d-sm-block">
+                <div className="fw-semibold">{user?.name || "Farmer"}</div>
+                <small className={darkMode ? "text-light opacity-75" : "text-muted"}>{user?.email || ""}</small>
+              </div>
             </div>
           </div>
         </header>
