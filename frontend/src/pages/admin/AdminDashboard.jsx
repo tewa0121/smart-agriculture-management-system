@@ -5,7 +5,9 @@ import {
   FaUserTie,
   FaTractor,
   FaSeedling,
-  FaClipboardList,
+  FaLayerGroup,
+  FaBoxOpen,
+  FaMoneyBillWave,
   FaChartLine,
   FaLeaf,
   FaTasks,
@@ -15,9 +17,6 @@ import {
   FaBalanceScale,
   FaRedoAlt,
   FaExclamationTriangle,
-  FaUserPlus,
-  FaFileAlt,
-  FaCheckCircle,
 } from "react-icons/fa";
 
 import {
@@ -32,6 +31,8 @@ import {
   PieChart,
   Pie,
   Cell,
+  LineChart,
+  Line,
 } from "recharts";
 
 import api from "../../services/api";
@@ -50,7 +51,6 @@ const EMPTY_STATS = {
   totalFarmers: 0,
   totalFarms: 0,
   totalCrops: 0,
-  totalApplications: 0,
   totalFields: 0,
   totalHarvests: 0,
   totalExpenses: 0,
@@ -80,7 +80,8 @@ const formatMoney = (value) =>
     maximumFractionDigits: 2,
   });
 
-const formatNumber = (value) => Number(value || 0).toLocaleString();
+const formatNumber = (value) =>
+  Number(value || 0).toLocaleString();
 
 const formatDate = (value) => {
   if (!value) return "—";
@@ -95,7 +96,9 @@ const formatDate = (value) => {
 };
 
 const safeText = (value, fallback = "—") =>
-  value === null || value === undefined || value === "" ? fallback : String(value);
+  value === null || value === undefined || value === ""
+    ? fallback
+    : String(value);
 
 const normalizeStats = (data = {}) => ({
   ...EMPTY_STATS,
@@ -116,12 +119,12 @@ const normalizeStats = (data = {}) => ({
   },
 });
 
-const SummaryCard = ({ title, value, icon, color, subtitle, linkTo }) => {
-  const content = (
-    <div className="card border-0 shadow-sm h-100 dashboard-summary-card p-3 rounded-4">
-      <div className="card-body p-0 d-flex align-items-center justify-content-between gap-3">
+const SummaryCard = ({ title, value, icon, color, subtitle }) => (
+  <div className="col-12 col-sm-6 col-xl-4 col-xxl-3">
+    <div className="card border-0 shadow-sm h-100 dashboard-summary-card">
+      <div className="card-body d-flex align-items-center justify-content-between gap-3">
         <div className="min-w-0">
-          <p className="text-muted mb-2 small text-uppercase fw-bold">{title}</p>
+          <p className="text-muted mb-2 small">{title}</p>
           <h3 className="fw-bold mb-1 text-break">{value}</h3>
           {subtitle && <small className="text-muted">{subtitle}</small>}
         </div>
@@ -140,20 +143,8 @@ const SummaryCard = ({ title, value, icon, color, subtitle, linkTo }) => {
         </div>
       </div>
     </div>
-  );
-
-  return (
-    <div className="col-12 col-sm-6 col-xl-4 col-xxl-4">
-      {linkTo ? (
-        <Link to={linkTo} className="text-decoration-none">
-          {content}
-        </Link>
-      ) : (
-        content
-      )}
-    </div>
-  );
-};
+  </div>
+);
 
 const EmptyState = ({ children }) => (
   <div className="text-center text-muted py-5">
@@ -163,7 +154,7 @@ const EmptyState = ({ children }) => (
 );
 
 const ChartCard = ({ title, subtitle, icon, children }) => (
-  <div className="card border-0 shadow-sm h-100 rounded-4">
+  <div className="card border-0 shadow-sm h-100">
     <div className="card-body p-3 p-md-4">
       <div className="mb-3">
         <h5 className="fw-bold mb-1">
@@ -286,21 +277,18 @@ const AdminDashboard = () => {
         value: formatNumber(stats.totalUsers),
         icon: <FaUsers />,
         color: "#0d6efd",
-        linkTo: "/admin/users",
       },
       {
         title: "Total Farmers",
         value: formatNumber(stats.totalFarmers),
         icon: <FaUserTie />,
         color: "#198754",
-        linkTo: "/admin/farmers",
       },
       {
         title: "Total Farms",
         value: formatNumber(stats.totalFarms),
         icon: <FaTractor />,
         color: "#fd7e14",
-        linkTo: "/admin/farms",
       },
       {
         title: "Total Crops",
@@ -309,22 +297,46 @@ const AdminDashboard = () => {
         color: "#20c997",
       },
       {
-        title: "Supply Applications",
-        value: formatNumber(stats.totalApplications || 0),
-        icon: <FaClipboardList />,
+        title: "Total Fields",
+        value: formatNumber(stats.totalFields),
+        icon: <FaLayerGroup />,
         color: "#6f42c1",
-        linkTo: "/admin/applications",
+      },
+      {
+        title: "Total Harvests",
+        value: formatNumber(stats.totalHarvests),
+        icon: <FaBoxOpen />,
+        color: "#d63384",
+      },
+      {
+        title: "Expense Records",
+        value: formatNumber(stats.totalExpenses),
+        icon: <FaMoneyBillWave />,
+        color: "#dc3545",
+      },
+      {
+        title: "Farm Activities",
+        value: formatNumber(stats.totalActivities),
+        icon: <FaTasks />,
+        color: "#20c997",
+      },
+      {
+        title: "Total Labor Costs",
+        value: formatMoney(stats.totalLaborCosts),
+        icon: <FaMoneyBillWave />,
+        color: "#fd7e14",
       },
     ],
     [stats]
   );
 
+  const activitySummary = stats.filteredActivitySummary;
   const hasDateFilter = Boolean(appliedDates.startDate || appliedDates.endDate);
 
   if (loading && !hasLoaded) {
     return (
       <div className="container-fluid py-4">
-        <div className="card border-0 shadow-sm rounded-4">
+        <div className="card border-0 shadow-sm">
           <div className="card-body d-flex align-items-center gap-3 py-5">
             <div
               className="spinner-border text-success"
@@ -346,7 +358,7 @@ const AdminDashboard = () => {
   if (error && !hasLoaded) {
     return (
       <div className="container-fluid py-4">
-        <div className="card border-0 shadow-sm rounded-4">
+        <div className="card border-0 shadow-sm">
           <div className="card-body text-center py-5">
             <FaExclamationTriangle className="text-danger mb-3" size={38} />
             <h2 className="fw-bold mb-2">Unable to load dashboard</h2>
@@ -367,7 +379,7 @@ const AdminDashboard = () => {
   }
 
   return (
-    <div className="container-fluid px-4 py-4 admin-dashboard">
+    <div className="container-fluid py-4 admin-dashboard">
       <style>{`
         .dashboard-summary-card {
           border-radius: 14px;
@@ -400,7 +412,7 @@ const AdminDashboard = () => {
             <h2 className="fw-bold mb-0">Admin Dashboard</h2>
           </div>
           <p className="text-muted mb-0">
-            Monitor users, farms, crops, applications, and core agricultural operations.
+            Monitor users, farms, crops, finances, harvests, and activities.
           </p>
         </div>
 
@@ -432,36 +444,7 @@ const AdminDashboard = () => {
         </div>
       )}
 
-      {/* Quick Actions Section */}
-      <div className="card dashboard-panel border-0 shadow-sm mb-4 bg-success bg-opacity-10">
-        <div className="card-body p-3 p-md-4">
-          <h5 className="fw-bold mb-3 text-success">⚡ Quick Actions</h5>
-          <div className="row g-3">
-            <div className="col-12 col-sm-6 col-lg-3">
-              <Link to="/admin/applications" className="btn btn-success w-100 py-2 d-flex align-items-center justify-content-center gap-2 text-decoration-none">
-                <FaClipboardList /> Review Supply Requests
-              </Link>
-            </div>
-            <div className="col-12 col-sm-6 col-lg-3">
-              <Link to="/admin/users" className="btn btn-outline-success w-100 py-2 d-flex align-items-center justify-content-center gap-2 text-decoration-none bg-white">
-                <FaUserPlus /> Add New User
-              </Link>
-            </div>
-            <div className="col-12 col-sm-6 col-lg-3">
-              <Link to="/admin/reports" className="btn btn-outline-success w-100 py-2 d-flex align-items-center justify-content-center gap-2 text-decoration-none bg-white">
-                <FaFileAlt /> Generate Reports
-              </Link>
-            </div>
-            <div className="col-12 col-sm-6 col-lg-3">
-              <Link to="/admin/farmers" className="btn btn-outline-success w-100 py-2 d-flex align-items-center justify-content-center gap-2 text-decoration-none bg-white">
-                <FaCheckCircle /> Manage Farmers
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Best 5 Summary Cards */}
+      {/* All-time summary cards */}
       <div className="row g-3 mb-4">
         {summaryCards.map((card) => (
           <SummaryCard key={card.title} {...card} />
@@ -488,7 +471,8 @@ const AdminDashboard = () => {
               <div>
                 <h5 className="fw-bold mb-1">Farm Comparison</h5>
                 <p className="text-muted mb-0">
-                  Compare revenue, expenses, labor costs, and net profit across farms.
+                  Compare revenue, expenses, labor costs, and net profit across
+                  farms.
                 </p>
               </div>
             </div>
@@ -631,6 +615,335 @@ const AdminDashboard = () => {
               </div>
             </div>
           </form>
+
+          <p className="small text-muted mt-3 mb-0">
+            {hasDateFilter
+              ? `Showing activities ${
+                  appliedDates.startDate
+                    ? `from ${formatDate(appliedDates.startDate)}`
+                    : "from the beginning"
+                } ${
+                  appliedDates.endDate
+                    ? `through ${formatDate(appliedDates.endDate)}`
+                    : "through the latest available date"
+                }.`
+              : "Showing all recorded farm activities. Choose dates to narrow the results."}
+          </p>
+        </div>
+      </div>
+
+      {/* Selected-period summary cards */}
+      <div className="row g-3 mb-4">
+        <div className="col-12 col-md-6">
+          <SummaryCard
+            title="Activities in Selected Period"
+            value={formatNumber(activitySummary.totalActivities)}
+            icon={<FaTasks />}
+            color="#198754"
+            subtitle={hasDateFilter ? "Selected date range" : "All recorded dates"}
+          />
+        </div>
+        <div className="col-12 col-md-6">
+          <SummaryCard
+            title="Labor Costs in Selected Period"
+            value={formatMoney(activitySummary.totalLaborCosts)}
+            icon={<FaMoneyBillWave />}
+            color="#fd7e14"
+            subtitle={hasDateFilter ? "Selected date range" : "All recorded dates"}
+          />
+        </div>
+      </div>
+
+      {/* Activities by type */}
+      <div className="row g-4 mb-4">
+        <div className="col-12">
+          <ChartCard
+            title="Activities by Type"
+            subtitle="Number of activities in the selected period."
+            icon={<FaTasks />}
+          >
+            {stats.activityTypeOverview.length ? (
+              <div className="chart-wrap">
+                <ResponsiveContainer width="100%" height={320}>
+                  <BarChart
+                    data={stats.activityTypeOverview}
+                    margin={{ top: 10, right: 20, left: 5, bottom: 10 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis
+                      dataKey="activityType"
+                      interval={0}
+                      angle={-15}
+                      textAnchor="end"
+                      height={65}
+                      tick={{ fontSize: 11 }}
+                    />
+                    <YAxis allowDecimals={false} />
+                    <Tooltip />
+                    <Legend />
+                    <Bar
+                      dataKey="total"
+                      name="Number of Activities"
+                      fill="#198754"
+                      radius={[5, 5, 0, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <EmptyState>No farm activities were found for this period.</EmptyState>
+            )}
+          </ChartCard>
+        </div>
+      </div>
+
+      {/* Labor costs chart and table */}
+      <div className="row g-4 mb-4">
+        <div className="col-12 col-lg-7">
+          <ChartCard
+            title="Labor Costs by Activity"
+            subtitle="Total labor costs for each activity in the selected period."
+          >
+            {stats.activityLaborOverview.length ? (
+              <div className="chart-wrap">
+                <ResponsiveContainer width="100%" height={340}>
+                  <BarChart
+                    data={stats.activityLaborOverview}
+                    layout="vertical"
+                    margin={{ top: 5, right: 25, left: 25, bottom: 5 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis type="number" />
+                    <YAxis
+                      type="category"
+                      dataKey="activityType"
+                      width={115}
+                      tick={{ fontSize: 11 }}
+                    />
+                    <Tooltip formatter={(value) => formatMoney(value)} />
+                    <Legend />
+                    <Bar
+                      dataKey="totalLaborCost"
+                      name="Labor Cost"
+                      fill="#fd7e14"
+                      radius={[0, 5, 5, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <EmptyState>No labor costs were found for this period.</EmptyState>
+            )}
+          </ChartCard>
+        </div>
+
+        <div className="col-12 col-lg-5">
+          <div className="card dashboard-panel border-0 shadow-sm h-100">
+            <div className="card-body p-3 p-md-4">
+              <h5 className="fw-bold mb-3">Highest Labor Costs</h5>
+              {stats.activityLaborOverview.length ? (
+                <div className="table-responsive">
+                  <table className="table table-hover align-middle">
+                    <thead className="table-success">
+                      <tr>
+                        <th>Activity</th>
+                        <th>Records</th>
+                        <th className="text-end">Labor Cost</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[...stats.activityLaborOverview]
+                        .sort(
+                          (a, b) =>
+                            Number(b.totalLaborCost || 0) -
+                            Number(a.totalLaborCost || 0)
+                        )
+                        .map((activity, index) => (
+                          <tr
+                            key={activity.activityType || `activity-${index}`}
+                          >
+                            <td className="fw-semibold">
+                              {safeText(activity.activityType)}
+                            </td>
+                            <td>{formatNumber(activity.totalActivities)}</td>
+                            <td className="text-end text-nowrap">
+                              {formatMoney(activity.totalLaborCost)}
+                            </td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <EmptyState>No activity records found for this period.</EmptyState>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Monthly expenses */}
+      <div className="row g-4 mb-4">
+        <div className="col-12">
+          <ChartCard
+            title="Monthly Expenses"
+            icon={<FaChartLine />}
+            subtitle="Recorded expenses over time."
+          >
+            {stats.monthlyExpenses.length ? (
+              <div className="chart-wrap">
+                <ResponsiveContainer width="100%" height={320}>
+                  <LineChart data={stats.monthlyExpenses}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+                    <YAxis tickFormatter={(value) => Number(value).toLocaleString()} />
+                    <Tooltip formatter={(value) => formatMoney(value)} />
+                    <Legend />
+                    <Line
+                      type="monotone"
+                      dataKey="total"
+                      name="Expenses"
+                      stroke="#dc3545"
+                      strokeWidth={3}
+                      activeDot={{ r: 6 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <EmptyState>No monthly expense data available.</EmptyState>
+            )}
+          </ChartCard>
+        </div>
+      </div>
+
+      {/* Monthly harvest revenue */}
+      <div className="row g-4 mb-4">
+        <div className="col-12">
+          <ChartCard
+            title="Monthly Harvest Revenue"
+            icon={<FaMoneyBillWave />}
+            subtitle="Recorded revenue from harvests over time."
+          >
+            {stats.monthlyHarvestRevenue.length ? (
+              <div className="chart-wrap">
+                <ResponsiveContainer width="100%" height={320}>
+                  <LineChart data={stats.monthlyHarvestRevenue}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+                    <YAxis tickFormatter={(value) => Number(value).toLocaleString()} />
+                    <Tooltip formatter={(value) => formatMoney(value)} />
+                    <Legend />
+                    <Line
+                      type="monotone"
+                      dataKey="total"
+                      name="Harvest Revenue"
+                      stroke="#198754"
+                      strokeWidth={3}
+                      activeDot={{ r: 6 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <EmptyState>No monthly harvest revenue data available.</EmptyState>
+            )}
+          </ChartCard>
+        </div>
+      </div>
+
+      {/* Monthly harvest quantities */}
+      <div className="row g-4 mb-4">
+        <div className="col-12">
+          <ChartCard
+            title="Monthly Harvest Quantity by Unit"
+            icon={<FaSeedling />}
+            subtitle="Harvest quantities grouped by unit."
+          >
+            {stats.monthlyHarvestQuantity.length && stats.quantityUnits.length ? (
+              <div className="chart-wrap">
+                <ResponsiveContainer width="100%" height={340}>
+                  <LineChart data={stats.monthlyHarvestQuantity}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    {stats.quantityUnits.map((unit, index) => (
+                      <Line
+                        key={unit}
+                        type="monotone"
+                        dataKey={unit}
+                        name={unit}
+                        stroke={COLORS[index % COLORS.length]}
+                        strokeWidth={2}
+                        connectNulls
+                      />
+                    ))}
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <EmptyState>
+                No harvest quantities recorded for the last six months.
+              </EmptyState>
+            )}
+          </ChartCard>
+        </div>
+      </div>
+
+      {/* Recent harvests */}
+      <div className="row g-4 mb-4">
+        <div className="col-12">
+          <div className="card dashboard-panel border-0 shadow-sm">
+            <div className="card-body p-3 p-md-4">
+              <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                <h5 className="fw-bold mb-0">Recent Harvests</h5>
+                <span className="text-muted small">Latest 10 harvest records</span>
+              </div>
+              {stats.recentHarvests.length ? (
+                <div className="table-responsive">
+                  <table className="table table-striped table-hover align-middle mb-0">
+                    <thead className="table-success">
+                      <tr>
+                        <th>Harvest ID</th>
+                        <th>Crop Name</th>
+                        <th>Harvest Date</th>
+                        <th>Quantity</th>
+                        <th>Total Revenue</th>
+                        <th>Quality</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {stats.recentHarvests.map((harvest, index) => (
+                        <tr key={harvest.id ?? `harvest-${index}`}>
+                          <td>#{safeText(harvest.id)}</td>
+                          <td className="fw-semibold">
+                            {safeText(harvest.cropName, "Unknown crop")}
+                          </td>
+                          <td>{formatDate(harvest.harvestDate)}</td>
+                          <td className="text-nowrap">
+                            {formatNumber(harvest.quantity)}{" "}
+                            {safeText(harvest.quantityUnit, "Unknown")}
+                          </td>
+                          <td className="text-nowrap">
+                            {formatMoney(harvest.totalRevenue)}
+                          </td>
+                          <td>
+                            <span className="badge bg-light text-dark border">
+                              {safeText(harvest.quality, "Not specified")}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <EmptyState>No harvest records are available yet.</EmptyState>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
