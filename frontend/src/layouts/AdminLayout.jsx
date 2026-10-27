@@ -27,7 +27,6 @@ function AdminLayout() {
   const { user, logout } = useAuth();
 
   useEffect(() => {
-    // አውቶማቲክ ቀን እና ዕለት ማመጣጫ (Automatic Day & Date)
     const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
     setCurrentDate(new Date().toLocaleDateString('en-US', options));
   }, []);
@@ -100,7 +99,7 @@ function AdminLayout() {
                 onClick={() => setSidebarOpen(false)}
                 className={({ isActive }) =>
                   `sidebar-link text-decoration-none rounded px-3 py-2 d-flex align-items-center gap-3 ${
-                    isActive ? "bg-success text-white" : darkMode ? "text-light" : "text-light"
+                    isActive ? "bg-success text-white" : "text-light"
                   }`
                 }
               >
@@ -130,8 +129,8 @@ function AdminLayout() {
         </div>
       </aside>
 
-      <main className="flex-grow-1 overflow-x-hidden">
-        {/* Header with Automatic Date & Theme Toggle */}
+      {/* Main Content with Full Dark Mode Background Support */}
+      <main className={`flex-grow-1 overflow-x-hidden ${darkMode ? "bg-dark text-white" : "bg-light text-dark"}`}>
         <header className={`border-bottom px-3 px-md-4 py-3 sticky-top ${darkMode ? "bg-dark text-white border-secondary" : "bg-white text-dark"}`} style={{ zIndex: 1020 }}>
           <div className="d-flex justify-content-between align-items-center">
             <div className="d-flex align-items-center gap-3">
@@ -151,7 +150,6 @@ function AdminLayout() {
             </div>
 
             <div className="d-flex align-items-center gap-3">
-              {/* Dark / Sunny Mode Toggle Button */}
               <button
                 onClick={() => setDarkMode(!darkMode)}
                 className={`btn btn-sm rounded-pill px-3 py-2 d-flex align-items-center gap-2 ${
