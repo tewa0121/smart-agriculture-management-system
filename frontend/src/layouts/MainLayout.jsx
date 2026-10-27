@@ -60,26 +60,28 @@ function MainLayout() {
         />
       )}
 
+      {/* Sticky Sidebar */}
       <aside
-        className={`farmer-sidebar bg-dark text-white d-flex flex-column ${
+        className={`farmer-sidebar bg-dark text-white d-flex flex-column position-sticky top-0 ${
           sidebarOpen ? "d-flex" : ""
         }`}
         style={{
           width: "260px",
           minWidth: "260px",
-          minHeight: "100vh",
+          height: "100vh",
+          maxHeight: "100vh",
+          overflowY: "auto",
           zIndex: 1040,
         }}
       >
-        <div className="px-4 py-3 border-bottom border-secondary">
-          <div className="d-flex align-items-center gap-2 sidebar-brand">
+        <div className="px-4 py-3 border-bottom border-secondary flex-shrink-0 sidebar-brand">
+          <div className="d-flex align-items-center gap-2">
             <div
               className="bg-success rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
               style={{ width: "42px", height: "42px" }}
             >
               <FaSeedling size={21} />
             </div>
-
             <div className="sidebar-brand-text">
               <h5 className="mb-0 fw-bold">Smart Agriculture</h5>
               <small className="text-secondary">Management System</small>
@@ -87,11 +89,10 @@ function MainLayout() {
           </div>
         </div>
 
-        <nav className="px-3 pt-3 pb-2">
+        <nav className="px-3 pt-3 pb-2 flex-grow-1 overflow-y-auto">
           <div className="text-uppercase text-secondary small fw-bold px-3 mb-2 sidebar-menu-label">
             Farmer Menu
           </div>
-
           <div className="d-flex flex-column gap-1">
             {navItems.map((item) => (
               <NavLink
@@ -111,8 +112,8 @@ function MainLayout() {
           </div>
         </nav>
 
-        <div className="px-3 pt-2 pb-3 border-top border-secondary mt-auto">
-          <div className="px-2 mb-2 sidebar-user-info">
+        <div className="px-3 pt-2 pb-3 border-top border-secondary flex-shrink-0 bg-dark sidebar-user-info">
+          <div className="px-2 mb-2">
             <small className="text-secondary">Signed in as</small>
             <div className="fw-semibold">{user?.name || "Farmer"}</div>
           </div>
@@ -120,10 +121,7 @@ function MainLayout() {
           <button
             type="button"
             className="sidebar-logout btn w-100 d-flex align-items-center justify-content-center gap-2 py-2 text-white border-0"
-            style={{
-              backgroundColor: "#198754",
-              transition: "background-color 0.2s ease",
-            }}
+            style={{ backgroundColor: "#198754" }}
             onClick={handleLogout}
           >
             <FaSignOutAlt />
@@ -132,8 +130,8 @@ function MainLayout() {
         </div>
       </aside>
 
-      <main className="flex-grow-1">
-        <header className="bg-white border-bottom px-3 px-md-4 py-3">
+      <main className="flex-grow-1 overflow-x-hidden">
+        <header className="bg-white border-bottom px-3 px-md-4 py-3 sticky-top" style={{ zIndex: 1020 }}>
           <div className="d-flex justify-content-between align-items-center">
             <div className="d-flex align-items-center gap-3">
               <button
@@ -143,7 +141,6 @@ function MainLayout() {
               >
                 {sidebarOpen ? <FaTimes /> : <FaBars />}
               </button>
-
               <div>
                 <h5 className="mb-0 fw-semibold">Farmer Portal</h5>
                 <small className="text-muted d-none d-sm-block">
@@ -151,7 +148,6 @@ function MainLayout() {
                 </small>
               </div>
             </div>
-
             <div className="text-end d-none d-sm-block">
               <div className="fw-semibold">{user?.name || "Farmer"}</div>
               <small className="text-muted">{user?.email || ""}</small>
@@ -159,7 +155,7 @@ function MainLayout() {
           </div>
         </header>
 
-        <div>
+        <div className="p-0">
           <Outlet />
         </div>
       </main>
