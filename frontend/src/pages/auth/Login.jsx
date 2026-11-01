@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../../services/api";
 import Footer from "../../components/common/Footer";
+import PasswordInput from "../../components/common/PasswordInput";
+import ThemeToggle from "../../components/common/ThemeToggle";
 import { useAuth } from "../../context/AuthContext";
 
 function Login() {
@@ -57,13 +59,17 @@ function Login() {
 
   return (
     <div
-      className="bg-light"
+      className="bg-body-tertiary position-relative"
       style={{
         minHeight: "100vh",
         display: "flex",
         flexDirection: "column",
       }}
     >
+      <div className="position-absolute top-0 end-0 m-3" style={{ zIndex: 10 }}>
+        <ThemeToggle />
+      </div>
+
       <main
         className="container py-5"
         style={{
@@ -148,11 +154,10 @@ function Login() {
                       Password
                     </label>
 
-                    <input
-                      type="password"
+                    <PasswordInput
+                      size="lg"
                       id="password"
                       name="password"
-                      className="form-control form-control-lg"
                       placeholder="Enter your password"
                       value={formData.password}
                       onChange={handleChange}

@@ -28,6 +28,14 @@ export function AuthProvider({ children }) {
     setUser(newUser);
   };
 
+  // Merge new profile data into the logged-in user (e.g. after editing the profile)
+  const updateUser = (changes) => {
+    const nextUser = { ...user, ...changes };
+
+    localStorage.setItem("user", JSON.stringify(nextUser));
+    setUser(nextUser);
+  };
+
   const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
@@ -42,6 +50,7 @@ export function AuthProvider({ children }) {
     isAuthenticated: Boolean(token),
     login,
     logout,
+    updateUser,
   };
 
   return (

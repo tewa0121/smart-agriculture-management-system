@@ -1,40 +1,89 @@
+/* =========================================================
+   Dark / Sunny mode
+   The theme is switched by data-bs-theme="dark" on <html>
+   (set in context/ThemeContext.jsx). Bootstrap restyles
+   cards, tables, forms, modals and dropdowns automatically.
+   The rules below fix classes that Bootstrap keeps light.
+   ========================================================= */
 
-body.dark-mode, 
-.d-flex.min-vh-100.bg-dark, 
-main.bg-dark {
-  background-color: #121212 !important;
-  color: #e0e0e0 !important;
+[data-bs-theme="dark"] .bg-white {
+  background-color: var(--bs-body-bg) !important;
 }
 
-
-.dark-mode .card,
-.bg-dark .card,
-.bg-dark .bg-white,
-.d-flex.min-vh-100.bg-dark .bg-white {
-  background-color: #1e1e1e !important;
-  color: #ffffff !important;
-  border-color: #2c2c2c !important;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5) !important;
+[data-bs-theme="dark"] .bg-light {
+  background-color: var(--bs-tertiary-bg) !important;
 }
 
-
-.dark-mode table,
-.bg-dark table {
-  color: #ffffff !important;
+[data-bs-theme="dark"] .text-dark:not(.btn):not(.badge):not(.bg-warning):not(.bg-info) {
+  color: var(--bs-body-color) !important;
 }
 
-.dark-mode input, 
-.dark-mode select, 
-.dark-mode textarea,
-.bg-dark input,
-.bg-dark select,
-.bg-dark textarea {
-  background-color: #2a2a2a !important;
-  color: #ffffff !important;
-  border-color: #404040 !important;
+[data-bs-theme="dark"] .btn-light {
+  --bs-btn-bg: var(--bs-tertiary-bg);
+  --bs-btn-color: var(--bs-body-color);
+  --bs-btn-border-color: var(--bs-border-color);
 }
 
-.dark-mode input::placeholder,
-.bg-dark input::placeholder {
-  color: #9ca3af !important;
+[data-bs-theme="dark"] .table-light {
+  --bs-table-color: var(--bs-body-color);
+  --bs-table-bg: var(--bs-tertiary-bg);
+  --bs-table-border-color: var(--bs-border-color);
+  --bs-table-striped-bg: var(--bs-secondary-bg);
+  --bs-table-hover-bg: var(--bs-secondary-bg);
+}
+
+/* Sidebar is always dark; make it a little darker in dark mode */
+[data-bs-theme="dark"] .farmer-sidebar {
+  background-color: #000 !important;
+  border-right: 1px solid #343a40;
+}
+
+/* =========================================================
+   Profile avatar (initials circle, top right)
+   ========================================================= */
+
+.user-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  background: #198754;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.95rem;
+  letter-spacing: 0.5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  flex-shrink: 0;
+  cursor: pointer;
+  user-select: none;
+  transition: box-shadow 0.15s ease;
+}
+
+.user-avatar:hover,
+.user-avatar.show {
+  box-shadow: 0 0 0 0.25rem rgba(25, 135, 84, 0.35);
+}
+
+.user-avatar:focus-visible {
+  outline: 2px solid #198754;
+  outline-offset: 2px;
+}
+
+.user-avatar-lg {
+  width: 56px;
+  height: 56px;
+  font-size: 1.2rem;
+  cursor: default;
+}
+
+.user-avatar-lg:hover {
+  box-shadow: none;
+}
+
+.user-menu {
+  min-width: 270px;
+  max-width: 90vw;
 }

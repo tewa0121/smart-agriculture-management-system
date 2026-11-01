@@ -28,6 +28,9 @@ import Weather from "./pages/farmer/Weather";
 import Reports from "./pages/farmer/Reports";
 import ApplySupplies from "./pages/farmer/ApplySupplies";
 
+// Shared pages
+import Settings from "./pages/common/Settings";
+
 // Layout and route protection
 import AdminLayout from "./layouts/AdminLayout";
 import MainLayout from "./layouts/MainLayout";
@@ -52,6 +55,7 @@ function App() {
           <Route path="reports" element={<FarmPerformanceReport />} />
           <Route path="farm-comparison" element={<FarmComparison />} />
           <Route path="applications" element={<Applications />} />
+          <Route path="settings" element={<Settings />} />
         </Route>
       </Route>
 
@@ -72,6 +76,7 @@ function App() {
           <Route path="weather" element={<Weather />} />
           <Route path="reports" element={<Reports />} />
           <Route path="apply-supplies" element={<ApplySupplies />} />
+          <Route path="settings" element={<Settings />} />
         </Route>
       </Route>
 
