@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../../services/api";
 import Footer from "../../components/common/Footer";
+import PasswordInput from "../../components/common/PasswordInput";
 
 function Register() {
   const navigate = useNavigate();
@@ -290,11 +291,10 @@ function Register() {
                   Password
                 </label>
 
-                <input
-                  type="password"
+                <PasswordInput
+                  size="lg"
                   id="password"
                   name="password"
-                  className="form-control form-control-lg"
                   placeholder="At least 6 characters"
                   value={form.password}
                   onChange={handleChange}
@@ -313,11 +313,10 @@ function Register() {
                   Confirm password
                 </label>
 
-                <input
-                  type="password"
+                <PasswordInput
+                  size="lg"
                   id="confirmPassword"
                   name="confirmPassword"
-                  className="form-control form-control-lg"
                   placeholder="Re-enter your password"
                   value={form.confirmPassword}
                   onChange={handleChange}

@@ -1,10 +1,17 @@
-const mysql = require("mysql2/promise");
 const fs = require("fs");
 const path = require("path");
+const { createRequire } = require("module");
 
-// Load .env from the project root
-require("dotenv").config({
-  path: path.join(__dirname, "..", ".env")
+// Load packages from backend/node_modules, because init.js lives in /database
+const backendRequire = createRequire(
+  path.join(__dirname, "..", "backend", "package.json")
+);
+
+const mysql = backendRequire("mysql2/promise");
+
+// Load .env from backend/.env
+backendRequire("dotenv").config({
+  path: path.join(__dirname, "..", "backend", ".env"),
 });
 
 async function initDatabase() {

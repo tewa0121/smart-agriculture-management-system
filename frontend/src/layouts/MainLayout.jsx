@@ -18,16 +18,15 @@ import {
   FaBars,
   FaTimes,
   FaPaperPlane,
-  FaSun,
-  FaMoon,
 } from "react-icons/fa";
 
 import { useAuth } from "../context/AuthContext";
+import ThemeToggle from "../components/common/ThemeToggle";
+import UserMenu from "../components/common/UserMenu";
 
 function MainLayout() {
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
   const [currentDate, setCurrentDate] = useState("");
 
   const { user, logout } = useAuth();
@@ -60,7 +59,7 @@ function MainLayout() {
   ];
 
   return (
-    <div className={`d-flex min-vh-100 ${darkMode ? "bg-dark text-white" : "bg-light text-dark"}`}>
+    <div className="d-flex min-vh-100 bg-body-tertiary text-body">
       {/* Backdrop for mobile when sidebar is open */}
       {sidebarOpen && (
         <div
@@ -72,7 +71,7 @@ function MainLayout() {
 
       {/* Sticky Sidebar with mobile toggle logic */}
       <aside
-        className={`farmer-sidebar ${darkMode ? "bg-black text-white border-end border-secondary" : "bg-dark text-white"} d-flex flex-column position-sticky top-0 ${
+        className={`farmer-sidebar bg-dark text-white d-flex flex-column position-sticky top-0 ${
           sidebarOpen ? "d-flex position-fixed start-0" : "d-none d-md-flex"
         }`}
         style={{
@@ -132,7 +131,7 @@ function MainLayout() {
           </div>
         </nav>
 
-        <div className={`px-3 pt-2 pb-3 border-top border-secondary flex-shrink-0 sidebar-user-info ${darkMode ? "bg-black" : "bg-dark"}`}>
+        <div className={`px-3 pt-2 pb-3 border-top border-secondary flex-shrink-0 sidebar-user-info bg-dark`}>
           <div className="px-2 mb-2">
             <small className="text-secondary">Signed in as</small>
             <div className="fw-semibold">{user?.name || "Farmer"}</div>
@@ -151,8 +150,8 @@ function MainLayout() {
       </aside>
 
       {/* Main Content */}
-      <main className={`flex-grow-1 overflow-x-hidden ${darkMode ? "bg-dark text-white" : "bg-light text-dark"}`}>
-        <header className={`border-bottom px-3 px-md-4 py-3 sticky-top ${darkMode ? "bg-dark text-white border-secondary" : "bg-white text-dark"}`} style={{ zIndex: 1020 }}>
+      <main className="flex-grow-1 overflow-x-hidden bg-body-tertiary text-body">
+        <header className="border-bottom px-3 px-md-4 py-3 sticky-top bg-body text-body" style={{ zIndex: 1020 }}>
           <div className="d-flex justify-content-between align-items-center">
             <div className="d-flex align-items-center gap-3">
               {/* Toggle Button for Mobile Sidebar */}
@@ -165,28 +164,15 @@ function MainLayout() {
               </button>
               <div>
                 <h5 className="mb-0 fw-semibold">Farmer Portal</h5>
-                <small className={darkMode ? "text-light opacity-75" : "text-muted"}>
+                <small className="text-body-secondary">
                   📅 {currentDate}
                 </small>
               </div>
             </div>
 
             <div className="d-flex align-items-center gap-3">
-              <button
-                onClick={() => setDarkMode(!darkMode)}
-                className={`btn btn-sm rounded-pill px-3 py-2 d-flex align-items-center gap-2 ${
-                  darkMode ? "btn-warning text-dark" : "btn-dark text-white"
-                }`}
-                title="Toggle Theme"
-              >
-                {darkMode ? <FaSun /> : <FaMoon />}
-                <span className="d-none d-sm-inline">{darkMode ? "Sunny Mode" : "Dark Mode"}</span>
-              </button>
-
-              <div className="text-end d-none d-sm-block">
-                <div className="fw-semibold">{user?.name || "Farmer"}</div>
-                <small className={darkMode ? "text-light opacity-75" : "text-muted"}>{user?.email || ""}</small>
-              </div>
+              <ThemeToggle />
+              <UserMenu />
             </div>
           </div>
         </header>

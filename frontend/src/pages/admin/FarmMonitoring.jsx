@@ -611,7 +611,7 @@ function FarmMonitoring() {
                   <tr
                     key={farm.id}
                     className="fm-table-row"
-                    style={{ background: "#fff" }}
+                    style={{ background: "var(--bs-body-bg)" }}
                   >
                     <td style={styles.td}>
                       <div style={styles.farmName}>

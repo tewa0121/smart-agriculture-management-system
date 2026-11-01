@@ -18,7 +18,6 @@ import {
   FaSeedling,
   FaCalendarAlt,
   FaTractor,
-  FaMapMarkedAlt,
   FaChartLine,
   FaMoneyBillWave,
   FaArrowUp,
@@ -212,13 +211,6 @@ function Dashboard() {
       linkTo: "/farmer/farms",
     },
     {
-      title: "Total Fields",
-      value: formatNumber(summary?.total_fields),
-      icon: <FaMapMarkedAlt />,
-      iconClass: "bg-primary-subtle text-primary",
-      linkTo: "/farmer/fields",
-    },
-    {
       title: "Active Crops",
       value: formatNumber(summary?.active_crops),
       icon: <FaSeedling />,
@@ -233,33 +225,10 @@ function Dashboard() {
       linkTo: "/farmer/irrigation",
     },
     {
-      title: "Upcoming Fertilizer",
-      value: formatNumber(summary?.upcoming_fertilizer),
-      icon: <FaFlask />,
-      iconClass: "bg-warning-subtle text-warning",
-      linkTo: "/farmer/fertilizers",
-    },
-    {
       title: "Upcoming Harvests",
       value: formatNumber(summary?.upcoming_harvests),
       icon: <FaCalendarAlt />,
       iconClass: "bg-success-subtle text-success",
-      linkTo: "/farmer/harvests",
-    },
-    {
-      title: "Total Expenses",
-      value: formatNumber(summary?.total_expenses),
-      icon: <FaMoneyBillWave />,
-      iconClass: "bg-danger-subtle text-danger",
-      valueClass: "text-danger",
-      linkTo: "/farmer/expenses",
-    },
-    {
-      title: "Total Revenue",
-      value: formatNumber(summary?.total_revenue),
-      icon: <FaArrowUp />,
-      iconClass: "bg-success-subtle text-success",
-      valueClass: "text-success",
       linkTo: "/farmer/harvests",
     },
     {
@@ -380,7 +349,7 @@ function Dashboard() {
           );
 
           return (
-            <div className="col-12 col-sm-6 col-xl-4" key={card.title}>
+            <div className="col-12 col-sm-6 col-xl-4 col-xxl" key={card.title}>
               {card.linkTo ? (
                 <Link to={card.linkTo} className="text-decoration-none">
                   {cardContent}
