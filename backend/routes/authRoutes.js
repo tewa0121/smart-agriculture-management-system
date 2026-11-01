@@ -4,6 +4,8 @@ const {
   register,
   login,
   me,
+  updateProfile,
+  changePassword,
 } = require("../controllers/authController");
 
 const {
@@ -37,6 +39,18 @@ router.get(
   "/me",
   authenticate,
   me
+);
+
+router.put(
+  "/profile",
+  authenticate,
+  updateProfile
+);
+
+router.put(
+  "/change-password",
+  authenticate,
+  changePassword
 );
 
 router.get(
