@@ -51,6 +51,36 @@ const findById = async (id) => {
   return rows[0] || null;
 };
 
+const findPasswordById = async (id) => {
+  const [rows] = await pool.query(
+    `
+    SELECT password
+    FROM users
+    WHERE id = ?
+    LIMIT 1
+    `,
+    [id]
+  );
+
+  return rows[0] ? rows[0].password : null;
+};
+
+const updateProfile = async ({ id, name, phone, address }) => {
+  const [result] = await pool.query(
+    `
+    UPDATE users
+    SET
+      name = ?,
+      phone = ?,
+      address = ?
+    WHERE id = ?
+    `,
+    [name, phone, address, id]
+  );
+
+  return result.affectedRows;
+};
+
 const createUser = async ({
   name,
   email,
@@ -214,6 +244,8 @@ module.exports = {
   // Authentication
   findByEmail,
   findById,
+  findPasswordById,
+  updateProfile,
   createUser,
 
   // Admin management
